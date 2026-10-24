@@ -33,10 +33,19 @@ Clone o repositório usando a URL disponível no GitHub:
 
 ```bash
 git clone <URL_DO_REPOSITORIO>
-cd kaysen/frontend
 ```
 
 Substitua `<URL_DO_REPOSITORIO>` pela URL real do projeto.
+
+Para apenas abrir o projeto acesse
+```
+cd kaysen
+```
+
+Caso necessite executar um comando acesse
+```
+cd kaysen/frontend
+```
 
 Instale as dependências:
 
