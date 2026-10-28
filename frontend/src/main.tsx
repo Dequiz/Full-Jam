@@ -6,6 +6,8 @@ import Dashboard from "./feature/dashboard/screen/Dashboard.tsx";
 import Stock from "./feature/stock/screen/Stock.tsx";
 import Order from "./feature/order/screen/Order.tsx";
 import CashFlow from "./feature/cashFlow/screen/CashFlow.tsx";
+import TermsOfUse from "./feature/termsOfUse/TermsOfUse.tsx";
+import PrivacyPolicy from "./feature/privacyPolicy/PrivacyPolicy.tsx";
 
 const router = createBrowserRouter(
   [
@@ -13,6 +15,8 @@ const router = createBrowserRouter(
     { path: "/estoque", element: <Stock /> },
     { path: "/pedidos", element: <Order /> },
     { path: "/fluxo-de-caixa", element: <CashFlow /> },
+    { path: "/termos-de-uso", element: <TermsOfUse /> },
+    { path: "/politica-de-privacidade", element: <PrivacyPolicy /> },
   ]
 );
 
