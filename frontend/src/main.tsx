@@ -8,10 +8,12 @@ import Order from "./feature/order/screen/Order.tsx";
 import CashFlow from "./feature/cashFlow/screen/CashFlow.tsx";
 import TermsOfUse from "./feature/termsOfUse/TermsOfUse.tsx";
 import PrivacyPolicy from "./feature/privacyPolicy/PrivacyPolicy.tsx";
+import Login from "./feature/login/Login.tsx";
 
 const router = createBrowserRouter(
   [
-    { path: "/", element: <Dashboard /> },
+    { path: "/relatorio", element: <Dashboard /> },
+    { path: "/", element: <Login /> },
     { path: "/estoque", element: <Stock /> },
     { path: "/pedidos", element: <Order /> },
     { path: "/fluxo-de-caixa", element: <CashFlow /> },
