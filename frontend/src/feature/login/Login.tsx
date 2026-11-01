@@ -1,10 +1,33 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { authService } from "../../service/authService.ts";
+import { PulseLoader } from "react-spinners";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const signIn = async () => {
+    if (!email || !password) {
+      toast.error("Preencha todos os campos!")
+      return
+    }
+
+    setIsLoading(true);
+
+    try {
+      await authService.signIn(email, password)
+      navigate("/relatorio")
+    } catch (error) {
+      toast.error("Login ou senha incorretos")
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div
@@ -21,7 +44,9 @@ const Login = () => {
           <h1 className={"text-4xl font-bold text-black"}>Login</h1>
 
           <div className={"flex w-full max-w-md flex-col gap-2.5 text-start"}>
-            <label className={"text-base font-bold text-black"}>E-mail</label>
+            <label className={"text-base font-bold text-black"}>
+              E-mail<span className={"align-top text-xs text-red-500"}> *</span>
+            </label>
             <input
               className={"h-10 w-full rounded-3xl border pl-2"}
               type="email"
@@ -31,7 +56,9 @@ const Login = () => {
           </div>
 
           <div className={"flex w-full max-w-md flex-col gap-2.5 text-start"}>
-            <label className={"text-base font-bold text-black"}>Senha</label>
+            <label className={"text-base font-bold text-black"}>
+              Senha<span className={"align-top text-xs text-red-500"}> *</span>
+            </label>
             <input
               className={"h-10 w-full rounded-3xl border pl-2"}
               type="password"
@@ -64,9 +91,13 @@ const Login = () => {
               "bg-accent-color w-full max-w-32 cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-white"
             }
 
-            onClick={() => navigate("/relatorio")}
+            onClick={() => signIn()}
           >
-            Entrar
+            {isLoading ? (
+              <PulseLoader color="#ffffff" size={8} margin={1} />
+            ) : (
+              <p>Entrar</p>
+            )}
           </button>
         </div>
         <div
