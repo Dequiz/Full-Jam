@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -35,9 +35,29 @@ const Login = () => {
             <input
               className={"h-10 w-full rounded-3xl border pl-2"}
               type="password"
+              placeholder={"Digite sua senha"}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+
+          <p className={"w-full max-w-md text-sm"}>
+            Leia os nossos{" "}
+            <Link
+              to="/termos-de-uso"
+              className={"text-sm text-blue-500 underline"}
+            >
+              Termos de Uso
+            </Link>{" "}
+            e
+            <Link
+              to="/politica-de-privacidade"
+              className={"text-blue-500 underline"}
+            >
+              {" "}
+              Políticas de Privacidade
+            </Link>{" "}
+            antes de se autenticar no sistema.
+          </p>
 
           <button
             className={
@@ -55,8 +75,8 @@ const Login = () => {
           }
         >
           <h2 className={"text-2xl font-bold text-white"}>
-            Seja Bem Vindo,
-            <br /> Usuário
+            Seja Bem Vindo
+            <br /> ao Kaysen
           </h2>
         </div>
       </div>
