@@ -1,8 +1,32 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { authService } from "../../service/authService.ts";
+import { toast } from "sonner";
 
 type NavBarOptions = 'DASHBOARD' | 'STOCK' | 'ORDER' | 'CASHFLOW' | 'TERMSOFUSE' | 'PRIVACYPOLICY';
 
 const NavBar = ({option}: {option:NavBarOptions}) => {
+
+  const navigate = useNavigate();
+
+  const showSignOutAlert = () => {
+    Swal.fire({
+      title: "Deseja sair da conta?",
+      showCancelButton: true,
+      confirmButtonColor: "#395CEB",
+      cancelButtonColor: "#292929",
+      confirmButtonText: "Sair",
+    }).then(async (result) => {
+      if (result.isConfirmed)
+        try {
+          await authService.signOut();
+          navigate("/");
+        } catch (error) {
+          toast.error("Erro ao sair, tente novamente");
+          console.error(error);
+        }
+    });
+  }
 
   return (
     <nav
@@ -71,13 +95,13 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
           </li>
         </Link>
 
-        <Link to="/">
+        <button onClick={showSignOutAlert} className={"cursor-pointer"}>
           <li
             className={"relative text-base transition before:mr-2 before:align-middle before:content-[url('/navbar-icons/leave.svg')]"}
           >
             Sair do Sistema
           </li>
-        </Link>
+        </button>
       </ol>
     </nav>
   );
