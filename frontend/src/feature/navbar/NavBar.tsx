@@ -19,7 +19,7 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
             "text-nav-text flex w-full flex-col flex-wrap justify-center gap-10 text-center"
           }
         >
-          <Link to="/">
+          <Link to="/relatorio">
             <li
               className={`relative flex items-center justify-center gap-[10px] rounded-[15px] py-5 text-[17px] transition before:align-middle ${option == "DASHBOARD" ? "bg-active-option-nav text-active-option-text rounded-[20px] before:content-[url('/navbar-icons/dashboard-selected.svg')]" : "before:content-[url('/navbar-icons/dashboard.svg')]"}`}
             >
@@ -68,6 +68,14 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
             className={`relative text-base transition before:mr-2 before:align-middle ${option == "PRIVACYPOLICY" ? "bg-active-option-nav text-active-option-text rounded-3xl before:content-[url('/navbar-icons/lock-selected.svg')]" : "before:content-[url('/navbar-icons/lock.svg')]"}`}
           >
             Política de Privacidade
+          </li>
+        </Link>
+
+        <Link to="/">
+          <li
+            className={"relative text-base transition before:mr-2 before:align-middle before:content-[url('/navbar-icons/leave.svg')]"}
+          >
+            Sair do Sistema
           </li>
         </Link>
       </ol>

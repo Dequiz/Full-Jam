@@ -15,6 +15,7 @@ export default {
         "nav-text": "#FFFFFF",
         "active-option-nav": "#A0B3FF",
         "active-option-text": "#292929",
+        "secondary-background": "#EDEDED",
       },
     },
   },
