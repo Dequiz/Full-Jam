@@ -22,3 +22,6 @@ frontend/.idea
 *.njsproj
 *.sln
 *.sw?
+
+# Environment Files
+.env
