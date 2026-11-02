@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { authService } from "../../service/authService.ts";
 import { toast } from "sonner";
@@ -6,8 +6,6 @@ import { toast } from "sonner";
 type NavBarOptions = 'DASHBOARD' | 'STOCK' | 'ORDER' | 'CASHFLOW' | 'TERMSOFUSE' | 'PRIVACYPOLICY';
 
 const NavBar = ({option}: {option:NavBarOptions}) => {
-
-  const navigate = useNavigate();
 
   const showSignOutAlert = () => {
     Swal.fire({
@@ -20,7 +18,6 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
       if (result.isConfirmed)
         try {
           await authService.signOut();
-          navigate("/");
         } catch (error) {
           toast.error("Erro ao sair, tente novamente");
           console.error(error);
