@@ -20,7 +20,7 @@ const Login = () => {
 
     try {
       await authService.signIn(email, password)
-      navigate("/relatorio")
+      navigate("/relatorio", {replace: true})
     } catch (error) {
       toast.error("Login ou senha incorretos")
       console.log(error);
