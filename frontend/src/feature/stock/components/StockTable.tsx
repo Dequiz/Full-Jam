@@ -1,21 +1,30 @@
 import { PulseLoader } from "react-spinners";
-import type { Product } from "../../../service/productService.ts";
+import type {
+  Product,
+  ProductSort,
+  ProductSortField,
+} from "../../../service/productService.ts";
 import StockTableRow from "./StockTableRow.tsx";
 
-const TABLE_HEADERS = [
-  "ID",
-  "Nome do Produto",
-  "Quantidade",
-  "Preço",
-  "Código",
-  "Status",
-  "Ações",
+const TABLE_HEADERS: {
+  label: string;
+  sortField?: ProductSortField;
+}[] = [
+  { label: "ID" },
+  { label: "Nome do Produto", sortField: "name" },
+  { label: "Quantidade", sortField: "quantity" },
+  { label: "Preço", sortField: "price" },
+  { label: "Código" },
+  { label: "Status" },
+  { label: "Ações" },
 ];
 
 type StockTableProps = {
   products: Product[];
   isLoading: boolean;
   loadError: string | null;
+  sort: ProductSort;
+  onSortByColumn: (field: ProductSortField) => void;
   onRetry: () => void;
   onEdit: (productId: string) => void;
   onDelete: (productId: string) => void;
@@ -25,6 +34,8 @@ const StockTable = ({
   products,
   isLoading,
   loadError,
+  sort,
+  onSortByColumn,
   onRetry,
   onEdit,
   onDelete,
@@ -34,11 +45,28 @@ const StockTable = ({
       <table className="w-full min-w-[850px] border-collapse text-left text-[16px]">
         <thead className="bg-accent-color text-[15px] font-semibold text-white">
           <tr>
-            {TABLE_HEADERS.map((header) => (
-              <th key={header} className="px-5 py-5">
-                {header}
-              </th>
-            ))}
+            {TABLE_HEADERS.map(({ label, sortField }) => {
+              const isActiveSort = sortField && sort.field === sortField;
+
+              return (
+                <th key={label} className="px-5 py-5">
+                  {sortField ? (
+                    <button
+                      type="button"
+                      onClick={() => onSortByColumn(sortField)}
+                      className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-white hover:opacity-90"
+                    >
+                      <span>{label}</span>
+                      <span className="text-xs opacity-90">
+                        {isActiveSort ? (sort.ascending ? "↑" : "↓") : "↕"}
+                      </span>
+                    </button>
+                  ) : (
+                    label
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

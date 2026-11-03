@@ -1,4 +1,8 @@
-import type { ProductFilters } from "../../../service/productService.ts";
+import type {
+  ProductFilters,
+  ProductSort,
+  ProductSortField,
+} from "../../../service/productService.ts";
 
 const FILTER_FIELDS = [
   ["name", "Nome"],
@@ -8,6 +12,18 @@ const FILTER_FIELDS = [
   ["minQuantity", "Qtd. mínima"],
   ["maxQuantity", "Qtd. máxima"],
 ] as const;
+
+const SORT_OPTIONS: {
+  value: `${ProductSortField}:${"asc" | "desc"}`;
+  label: string;
+}[] = [
+  { value: "name:asc", label: "Nome (A → Z)" },
+  { value: "name:desc", label: "Nome (Z → A)" },
+  { value: "quantity:asc", label: "Quantidade (Menor → Maior)" },
+  { value: "quantity:desc", label: "Quantidade (Maior → Menor)" },
+  { value: "price:asc", label: "Preço (Menor → Maior)" },
+  { value: "price:desc", label: "Preço (Maior → Menor)" },
+];
 
 type StockToolbarProps = {
   query: string;
@@ -19,8 +35,9 @@ type StockToolbarProps = {
   onDraftFiltersChange: (filters: ProductFilters) => void;
   onApplyFilters: () => void;
   onClearFilters: () => void;
-  sortAscending: boolean;
-  onToggleSort: () => void;
+  sort: ProductSort;
+  onSortChange: (sort: ProductSort) => void;
+  onToggleSortDirection: () => void;
 };
 
 const StockToolbar = ({
@@ -33,9 +50,12 @@ const StockToolbar = ({
   onDraftFiltersChange,
   onApplyFilters,
   onClearFilters,
-  sortAscending,
-  onToggleSort,
+  sort,
+  onSortChange,
+  onToggleSortDirection,
 }: StockToolbarProps) => {
+  const currentSortValue = `${sort.field}:${sort.ascending ? "asc" : "desc"}` as const;
+
   return (
     <div className="relative mb-[22px] flex flex-wrap items-center justify-between gap-4">
       <label className="border-input-stroke flex h-[52px] w-full max-w-[510px] items-center gap-3 rounded-[10px] border bg-white px-4">
@@ -48,7 +68,7 @@ const StockToolbar = ({
         />
       </label>
 
-      <div className="relative flex items-center gap-[15px]">
+      <div className="relative flex flex-wrap items-center gap-[15px]">
         <button
           onClick={onToggleFilter}
           className="border-input-stroke text-accent-color flex h-[52px] cursor-pointer items-center gap-2 rounded-[10px] border bg-white px-4 text-[15px] font-semibold"
@@ -71,11 +91,42 @@ const StockToolbar = ({
           Filtrar
         </button>
 
+        <label className="border-input-stroke flex h-[52px] items-center gap-2 rounded-[10px] border bg-white px-3 text-[14px] text-[#1f2937]">
+          <span className="text-secondary-text text-xs font-semibold">
+            Ordenar:
+          </span>
+          <select
+            aria-label="Critério de ordenação"
+            value={currentSortValue}
+            onChange={(e) => {
+              const [field, dir] = e.target.value.split(":") as [
+                ProductSortField,
+                "asc" | "desc",
+              ];
+              onSortChange({ field, ascending: dir === "asc" });
+            }}
+            className="text-accent-color cursor-pointer bg-transparent text-[14px] font-semibold outline-none"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button
           aria-label={
-            sortAscending ? "Ordenar de A a Z" : "Ordenar de Z a A"
+            sort.ascending
+              ? "Inverter para ordem decrescente"
+              : "Inverter para ordem crescente"
           }
-          onClick={onToggleSort}
+          title={
+            sort.ascending
+              ? "Ordem crescente (clique para inverter)"
+              : "Ordem decrescente (clique para inverter)"
+          }
+          onClick={onToggleSortDirection}
           className="bg-accent-color grid size-[30px] cursor-pointer place-items-center rounded-full text-white"
         >
           <svg
@@ -85,7 +136,7 @@ const StockToolbar = ({
           >
             <path
               className={`origin-center transition-transform duration-300 ${
-                sortAscending ? "rotate-180" : "rotate-0"
+                sort.ascending ? "rotate-180" : "rotate-0"
               }`}
               d="M7 4v14m0 0-4-4m4 4 4-4"
               strokeLinecap="round"
@@ -93,7 +144,7 @@ const StockToolbar = ({
             />
             <path
               className={`origin-center transition-transform duration-300 ${
-                sortAscending ? "rotate-180" : "rotate-0"
+                sort.ascending ? "rotate-180" : "rotate-0"
               }`}
               d="M17 20V6m0 0-4 4m4-4 4 4"
               strokeLinecap="round"
