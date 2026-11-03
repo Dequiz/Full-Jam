@@ -17,7 +17,10 @@ export default {
         "active-option-text": "#292929",
         "secondary-background": "#EDEDED",
         "button-hover": "#A0B3FF",
-        "hover-text": "#292929"
+        "hover-text": "#292929",
+        "action-button-bg": "#F3F4F6",
+        "action-button-delete-hover": "#FFF1F1",
+        "action-button-edit-hover": "#E3EAFF",
       },
     },
   },
