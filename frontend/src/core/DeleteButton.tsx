@@ -1,11 +1,10 @@
-
 type AnyObject = {
-  id: string
-}
+  id: string;
+};
 
 interface DeleteButtonProps {
-  objectToDelete: AnyObject
-  onDelete: (id: string) => void
+  objectToDelete: AnyObject;
+  onDelete: (id: string) => void;
 }
 
 const DeleteButton = ({ objectToDelete, onDelete }: DeleteButtonProps) => {
@@ -13,7 +12,7 @@ const DeleteButton = ({ objectToDelete, onDelete }: DeleteButtonProps) => {
     <button
       onClick={() => onDelete(objectToDelete.id)}
       aria-label="Excluir produto"
-      className="group text-destructive-color bg-action-button-bg hover:bg-action-button-delete-hover grid size-8 place-items-center rounded-lg transition duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:-translate-y-1"
+      className="group text-destructive-color bg-action-button-bg hover:bg-action-button-delete-hover grid size-8 cursor-pointer place-items-center rounded-lg transition duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:-translate-y-1"
     >
       <svg
         aria-hidden="true"

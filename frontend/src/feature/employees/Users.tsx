@@ -2,9 +2,11 @@ import NavBar from "../navbar/NavBar.tsx";
 import { useEffect, useState } from "react";
 import { userService } from "../../service/userService.ts";
 import { toast } from "sonner";
+import EditButton from "../../core/EditButton.tsx";
+import DeleteButton from "../../core/DeleteButton.tsx";
 
-export interface User {
-  ID_USUARIO: number
+interface User {
+  ID_USUARIO: string
   NOME: string
   EMAIL: string
   ROLE: "PROPRIETARIO" | "FUNCIONARIO"
@@ -136,8 +138,19 @@ const Users = () => {
                         {user.ATIVO ? "Ativo" : "Inativo"}
                       </span>
                     </td>
-                    <td className={`${td} pr-8`}>
-                      {/* TODO Botões de Ação */}
+                    <td className={`${td} pr-8 flex gap-3`}>
+                      <EditButton
+                        objectToEdit={{
+                          id: user.ID_USUARIO
+                        }}
+                        onEdit={() => {}}
+                      />
+                      <DeleteButton
+                        objectToDelete={{
+                          id: user.ID_USUARIO
+                        }}
+                        onDelete={() => {}}
+                      />
                     </td>
                   </tr>
                 ))}
