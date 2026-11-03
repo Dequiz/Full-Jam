@@ -7,6 +7,8 @@ import {
   type Product,
   type ProductFilters,
   type ProductPayload,
+  type ProductSort,
+  type ProductSortField,
 } from "../../../service/productService.ts";
 import DeleteProductModal from "../components/DeleteProductModal.tsx";
 import ProductForm from "../components/ProductForm.tsx";
@@ -75,6 +77,20 @@ const validateFilters = (filters: ProductFilters): string | null => {
   return null;
 };
 
+const compareProducts = (a: Product, b: Product, sort: ProductSort): number => {
+  const direction = sort.ascending ? 1 : -1;
+
+  if (sort.field === "quantity") {
+    const diff = a.quantity - b.quantity;
+    if (diff !== 0) return diff * direction;
+  } else if (sort.field === "price") {
+    const diff = a.price - b.price;
+    if (diff !== 0) return diff * direction;
+  }
+
+  return a.name.localeCompare(b.name, "pt-BR") * direction;
+};
+
 const buttonClass =
   "flex h-[52px] items-center justify-center rounded-[10px] px-6 text-[15px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -84,7 +100,10 @@ export default function Stock() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sortAscending, setSortAscending] = useState(true);
+  const [sort, setSort] = useState<ProductSort>({
+    field: "name",
+    ascending: true,
+  });
   const [filters, setFilters] = useState<ProductFilters>(emptyFilters);
   const [draftFilters, setDraftFilters] =
     useState<ProductFilters>(emptyFilters);
@@ -96,7 +115,7 @@ export default function Stock() {
     setIsLoading(true);
     setLoadError(null);
     productService
-      .getProducts(filters, sortAscending)
+      .getProducts(filters, sort)
       .then((data) => {
         setProducts(data);
       })
@@ -112,12 +131,12 @@ export default function Stock() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [filters, sortAscending]);
+  }, [filters, sort]);
 
   useEffect(() => {
     let active = true;
     productService
-      .getProducts(filters, sortAscending)
+      .getProducts(filters, sort)
       .then((data) => {
         if (!active) return;
         setProducts(data);
@@ -139,7 +158,7 @@ export default function Stock() {
     return () => {
       active = false;
     };
-  }, [filters, sortAscending]);
+  }, [filters, sort]);
 
   const selected = products.find((product) => product.id === selectedId);
 
@@ -169,11 +188,8 @@ export default function Stock() {
           (!params.has("maxQuantity") ||
             p.quantity <= Number(params.get("maxQuantity"))),
       )
-      .sort(
-        (a, b) =>
-          a.name.localeCompare(b.name, "pt-BR") * (sortAscending ? 1 : -1),
-      );
-  }, [products, query, filters, sortAscending]);
+      .sort((a, b) => compareProducts(a, b, sort));
+  }, [products, query, filters, sort]);
 
   const back = () => {
     if (isSubmitting) return;
@@ -198,9 +214,23 @@ export default function Stock() {
     setFilters(emptyFilters);
   };
 
-  const toggleSort = () => {
+  const handleSortChange = (nextSort: ProductSort) => {
     setIsLoading(true);
-    setSortAscending((v) => !v);
+    setSort(nextSort);
+  };
+
+  const toggleSortDirection = () => {
+    setIsLoading(true);
+    setSort((prev) => ({ ...prev, ascending: !prev.ascending }));
+  };
+
+  const handleSortByColumn = (field: ProductSortField) => {
+    setIsLoading(true);
+    setSort((prev) =>
+      prev.field === field
+        ? { field, ascending: !prev.ascending }
+        : { field, ascending: true },
+    );
   };
 
   const save = async (data: ProductPayload) => {
@@ -302,14 +332,17 @@ export default function Stock() {
                 onDraftFiltersChange={setDraftFilters}
                 onApplyFilters={applyFilters}
                 onClearFilters={clearFilters}
-                sortAscending={sortAscending}
-                onToggleSort={toggleSort}
+                sort={sort}
+                onSortChange={handleSortChange}
+                onToggleSortDirection={toggleSortDirection}
               />
 
               <StockTable
                 products={filtered}
                 isLoading={isLoading}
                 loadError={loadError}
+                sort={sort}
+                onSortByColumn={handleSortByColumn}
                 onRetry={retryFetch}
                 onEdit={(productId) => {
                   setSelectedId(productId);
