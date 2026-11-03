@@ -16,6 +16,8 @@ export default {
         "active-option-nav": "#A0B3FF",
         "active-option-text": "#292929",
         "secondary-background": "#EDEDED",
+        "button-hover": "#A0B3FF",
+        "hover-text": "#292929"
       },
     },
   },
