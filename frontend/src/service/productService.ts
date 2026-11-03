@@ -32,9 +32,22 @@ export type ProductPayload = {
   imageFile?: File | null;
 };
 
+export type ProductSortField = "name" | "quantity" | "price";
+
+export type ProductSort = {
+  field: ProductSortField;
+  ascending: boolean;
+};
+
+const SORT_COLUMN_MAP: Record<ProductSortField, string> = {
+  name: "NOME",
+  quantity: "QUANTIDADE_ESTOQUE",
+  price: "PRECO",
+};
+
 const PRODUCTS_TABLE = "Produto";
-const PRODUCT_COLUMNS =
-  "ID_PRODUTO, NOME, DESCRICAO, PRECO, QUANTIDADE_ESTOQUE, CODIGO, ATIVO";
+const PRODUCT_IMAGES_BUCKET =
+  import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || "products";
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 
@@ -46,9 +59,13 @@ type RawProdutoRow = {
   QUANTIDADE_ESTOQUE: number | string;
   CODIGO: string;
   ATIVO: boolean;
+  IMAGEM?: string | null;
 };
 
-const normalizeProduct = (row: RawProdutoRow, image?: string): Product => ({
+const normalizeProduct = (
+  row: RawProdutoRow,
+  fallbackImage?: string,
+): Product => ({
   id: String(row.ID_PRODUTO),
   name: String(row.NOME ?? ""),
   description: String(row.DESCRICAO ?? ""),
@@ -56,7 +73,7 @@ const normalizeProduct = (row: RawProdutoRow, image?: string): Product => ({
   quantity: Number(row.QUANTIDADE_ESTOQUE ?? 0),
   code: String(row.CODIGO ?? ""),
   active: Boolean(row.ATIVO),
-  image,
+  image: row.IMAGEM ?? fallbackImage ?? undefined,
 });
 
 export const validateProductPayload = (
@@ -107,6 +124,47 @@ export const validateProductPayload = (
 };
 
 export const productService = {
+  uploadImage: async (file: File, productCode: string): Promise<string> => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      throw new Error("Escolha um arquivo JPG ou PNG de até 5 MB.");
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error("Escolha um arquivo JPG ou PNG de até 5 MB.");
+    }
+
+    const extension =
+      file.name.split(".").pop()?.toLowerCase() ||
+      (file.type === "image/png" ? "png" : "jpg");
+    const safeCode = (productCode.trim() || "produto").replace(
+      /[^a-zA-Z0-9_-]/g,
+      "_",
+    );
+    const filePath = `products/${safeCode}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(PRODUCT_IMAGES_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      throw new Error(
+        `Não foi possível enviar a imagem para o bucket "${PRODUCT_IMAGES_BUCKET}": ${uploadError.message}`,
+      );
+    }
+
+    const { data } = supabase.storage
+      .from(PRODUCT_IMAGES_BUCKET)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  },
+
   checkCodeExists: async (
     code: string,
     excludeId?: string,
@@ -131,12 +189,13 @@ export const productService = {
 
   getProducts: async (
     filters?: Partial<ProductFilters>,
-    sortAscending = true,
+    sort: ProductSort = { field: "name", ascending: true },
   ): Promise<Product[]> => {
+    const sortColumn = SORT_COLUMN_MAP[sort.field] ?? "NOME";
     let queryBuilder = supabase
       .from(PRODUCTS_TABLE)
-      .select(PRODUCT_COLUMNS)
-      .order("NOME", { ascending: sortAscending });
+      .select("*")
+      .order(sortColumn, { ascending: sort.ascending });
 
     if (filters?.name?.trim()) {
       queryBuilder = queryBuilder.ilike("NOME", `%${filters.name.trim()}%`);
@@ -201,27 +260,53 @@ export const productService = {
       throw new Error("Já existe um produto cadastrado com este código.");
     }
 
-    const { data, error } = await supabase
-      .from(PRODUCTS_TABLE)
-      .insert([
-        {
-          ID_PRODUTO: crypto.randomUUID(),
-          NOME: payload.name.trim(),
-          DESCRICAO: payload.description?.trim() ?? "",
-          PRECO: Number(payload.price),
-          QUANTIDADE_ESTOQUE: Number(payload.quantity),
-          CODIGO: trimmedCode,
-          ATIVO: payload.active,
-        },
-      ])
-      .select(PRODUCT_COLUMNS)
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
+    let imageUrl = payload.image?.trim() || undefined;
+    if (payload.imageFile) {
+      imageUrl = await productService.uploadImage(
+        payload.imageFile,
+        trimmedCode,
+      );
     }
 
-    return normalizeProduct(data as RawProdutoRow, payload.image);
+    const baseRow = {
+      ID_PRODUTO: crypto.randomUUID(),
+      NOME: payload.name.trim(),
+      DESCRICAO: payload.description?.trim() ?? "",
+      PRECO: Number(payload.price),
+      QUANTIDADE_ESTOQUE: Number(payload.quantity),
+      CODIGO: trimmedCode,
+      ATIVO: payload.active,
+    };
+
+    const firstAttempt = await supabase
+      .from(PRODUCTS_TABLE)
+      .insert([imageUrl ? { ...baseRow, IMAGEM: imageUrl } : baseRow])
+      .select("*")
+      .single();
+
+    if (
+      firstAttempt.error &&
+      imageUrl &&
+      firstAttempt.error.message.includes("IMAGEM")
+    ) {
+      const retryAttempt = await supabase
+        .from(PRODUCTS_TABLE)
+        .insert([baseRow])
+        .select("*")
+        .single();
+
+      if (retryAttempt.error) {
+        throw new Error(retryAttempt.error.message);
+      }
+
+      return normalizeProduct(retryAttempt.data as RawProdutoRow, imageUrl);
+    }
+
+    if (firstAttempt.error) {
+      throw new Error(firstAttempt.error.message);
+    }
+
+    return normalizeProduct(firstAttempt.data as RawProdutoRow, imageUrl);
   },
 
   updateProduct: async (
@@ -242,23 +327,52 @@ export const productService = {
       throw new Error("Já existe outro produto cadastrado com este código.");
     }
 
-    const { data, error } = await supabase
-      .from(PRODUCTS_TABLE)
-      .update({
-        NOME: payload.name.trim(),
-        DESCRICAO: payload.description?.trim() ?? "",
-        PRECO: Number(payload.price),
-        ATIVO: payload.active,
-      })
-      .eq("ID_PRODUTO", id)
-      .select(PRODUCT_COLUMNS)
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
+    let imageUrl = payload.image?.trim() || undefined;
+    if (payload.imageFile) {
+      imageUrl = await productService.uploadImage(
+        payload.imageFile,
+        trimmedCode,
+      );
     }
 
-    return normalizeProduct(data as RawProdutoRow, payload.image);
+    const baseUpdate = {
+      NOME: payload.name.trim(),
+      DESCRICAO: payload.description?.trim() ?? "",
+      PRECO: Number(payload.price),
+      ATIVO: payload.active,
+    };
+
+    const firstAttempt = await supabase
+      .from(PRODUCTS_TABLE)
+      .update(imageUrl ? { ...baseUpdate, IMAGEM: imageUrl } : baseUpdate)
+      .eq("ID_PRODUTO", id)
+      .select("*")
+      .single();
+
+    if (
+      firstAttempt.error &&
+      imageUrl &&
+      firstAttempt.error.message.includes("IMAGEM")
+    ) {
+      const retryAttempt = await supabase
+        .from(PRODUCTS_TABLE)
+        .update(baseUpdate)
+        .eq("ID_PRODUTO", id)
+        .select("*")
+        .single();
+
+      if (retryAttempt.error) {
+        throw new Error(retryAttempt.error.message);
+      }
+
+      return normalizeProduct(retryAttempt.data as RawProdutoRow, imageUrl);
+    }
+
+    if (firstAttempt.error) {
+      throw new Error(firstAttempt.error.message);
+    }
+
+    return normalizeProduct(firstAttempt.data as RawProdutoRow, imageUrl);
   },
 
   deleteProduct: async (id: string): Promise<void> => {
