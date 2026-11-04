@@ -12,6 +12,7 @@ import Login from "./feature/login/Login.tsx";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./routes/ProtectedRoute.tsx";
 import Users from "./feature/employees/Users.tsx";
+import UserForm from "./feature/employees/components/UserForm.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -25,7 +26,9 @@ createRoot(document.getElementById("root")!).render(
           <Route path={"/estoque"} element={<Stock />} />
           <Route path={"/pedidos"} element={<Order />} />
           <Route path={"/fluxo-de-caixa"} element={<CashFlow />} />
-          <Route path={"/funcionario"} element={<Users />} />
+          <Route path={"/usuarios"} element={<Users />} />
+          <Route path={"/usuarios/adicionar"} element={<UserForm />} />
+          <Route path={"/usuarios/:id/editar"} element={<UserForm />} />
         </Route>
 
         <Route path={"/termos-de-uso"} element={<TermsOfUse />} />

@@ -1,13 +1,16 @@
 import EditButton from "../../../core/EditButton.tsx";
 import DeleteButton from "../../../core/DeleteButton.tsx";
 import type { User } from "../Users.tsx";
+import { useNavigate } from "react-router-dom";
 
 interface Config {
   loading: boolean
-  users: User[]
+  users: User[],
+  onDelete: (id: string) => void
 }
 
-const UserTable = ({ loading, users}: Config) => {
+const UserTable = ({ loading, users, onDelete}: Config) => {
+  const navigate = useNavigate();
 
   const th =
     "px-4 py-5 text-left text-base font-semibold font-semibold whitespace-nowrap first:pl-8";
@@ -43,7 +46,7 @@ const UserTable = ({ loading, users}: Config) => {
           <tbody className="divide-y-2 divide-slate-100">
             {loading && (
               <tr>
-                <td colSpan={5} className="px-8 py-10 text-center">
+                <td colSpan={6} className="px-8 py-10 text-center">
                   Carregando usuários…
                 </td>
               </tr>
@@ -51,7 +54,7 @@ const UserTable = ({ loading, users}: Config) => {
 
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-8 py-10 text-center">
+                <td colSpan={6} className="px-8 py-10 text-center">
                   Nenhum usuário cadastrado.
                 </td>
               </tr>
@@ -92,13 +95,13 @@ const UserTable = ({ loading, users}: Config) => {
                     objectToEdit={{
                       id: user.ID_USUARIO,
                     }}
-                    onEdit={() => {}}
+                    onEdit={() => navigate(`/usuarios/${user.ID_USUARIO}/editar`)}
                   />
                   <DeleteButton
                     objectToDelete={{
                       id: user.ID_USUARIO,
                     }}
-                    onDelete={() => {}}
+                    onDelete={() => onDelete(user.ID_USUARIO)}
                   />
                 </td>
               </tr>

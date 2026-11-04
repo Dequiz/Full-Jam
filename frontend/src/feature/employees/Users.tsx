@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { userService } from "../../service/userService.ts";
 import { toast } from "sonner";
 import UserTable from "./components/UserTable.tsx";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export interface User {
   ID_USUARIO: string
@@ -13,11 +15,9 @@ export interface User {
 }
 
 const Users = () => {
-
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-
-
 
   useEffect(() => {
     const getUsers = async () => {
@@ -42,6 +42,32 @@ const Users = () => {
     getUsers()
   }, [])
 
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Excluir usuário?",
+      text: "Essa ação não pode ser desfeita.",
+      showCancelButton: true,
+      confirmButtonColor: "#395CEB",
+      cancelButtonColor: "#292929",
+      confirmButtonText: "Excluir",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await userService.deleteUser(id)
+      setUsers((prev) => prev.filter((user) => user.ID_USUARIO !== id))
+      toast.success("Usuário excluido com sucesso!")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro desconhecido, entre em contato com o administrador",
+      );
+    }
+  }
+
   return (
     <main className={"flex"}>
       <NavBar option="USER" />
@@ -56,12 +82,13 @@ const Users = () => {
             className={
               "bg-accent-color hover:bg-button-hover hover:text-hover-text cursor-pointer rounded-xl px-9 py-3.5 text-sm font-semibold text-white hover:transition-colors"
             }
+            onClick={() => navigate("/usuarios/adicionar")}
           >
             + Adicionar usuário
           </button>
         </header>
 
-        <UserTable loading={loading} users={users}/>
+        <UserTable loading={loading} users={users} onDelete={handleDelete}/>
       </section>
     </main>
   );

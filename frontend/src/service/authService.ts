@@ -8,6 +8,11 @@ export const authService = {
     })
 
     if (error) {
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        throw new Error(
+          "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
+        );
+      }
       throw new Error(error.message)
     }
 
