@@ -2,9 +2,12 @@ import NavBar from "../navbar/NavBar.tsx";
 import { useEffect, useState } from "react";
 import { userService } from "../../service/userService.ts";
 import { toast } from "sonner";
+import UserTable from "./components/UserTable.tsx";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export interface User {
-  ID_USUARIO: number
+  ID_USUARIO: string
   NOME: string
   EMAIL: string
   ROLE: "PROPRIETARIO" | "FUNCIONARIO"
@@ -12,12 +15,9 @@ export interface User {
 }
 
 const Users = () => {
-
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const th = "px-4 py-5 text-left text-base font-semibold font-semibold whitespace-nowrap first:pl-8";
-  const td = "px-4 py-5 whitespace-nowrap first:pl-8";
 
   useEffect(() => {
     const getUsers = async () => {
@@ -42,6 +42,32 @@ const Users = () => {
     getUsers()
   }, [])
 
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Excluir usuário?",
+      text: "Essa ação não pode ser desfeita.",
+      showCancelButton: true,
+      confirmButtonColor: "#395CEB",
+      cancelButtonColor: "#292929",
+      confirmButtonText: "Excluir",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await userService.deleteUser(id)
+      setUsers((prev) => prev.filter((user) => user.ID_USUARIO !== id))
+      toast.success("Usuário excluido com sucesso!")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro desconhecido, entre em contato com o administrador",
+      );
+    }
+  }
+
   return (
     <main className={"flex"}>
       <NavBar option="USER" />
@@ -56,95 +82,13 @@ const Users = () => {
             className={
               "bg-accent-color hover:bg-button-hover hover:text-hover-text cursor-pointer rounded-xl px-9 py-3.5 text-sm font-semibold text-white hover:transition-colors"
             }
+            onClick={() => navigate("/usuarios/adicionar")}
           >
             + Adicionar usuário
           </button>
         </header>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-5xl border-collapse">
-              <thead className="bg-accent-color text-white">
-                <tr>
-                  <th scope="col" className={th}>
-                    ID
-                  </th>
-                  <th scope="col" className={th}>
-                    Nome do Usuário
-                  </th>
-                  <th scope="col" className={th}>
-                    Email
-                  </th>
-                  <th scope="col" className={th}>
-                    Cargo
-                  </th>
-                  <th scope="col" className={th}>
-                    Status
-                  </th>
-                  <th scope="col" className={`${th} pr-8`}>
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y-2 divide-slate-100">
-                {loading && (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-10 text-center">
-                      Carregando usuários…
-                    </td>
-                  </tr>
-                )}
-
-                {!loading && users.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-10 text-center">
-                      Nenhum usuário cadastrado.
-                    </td>
-                  </tr>
-                )}
-
-                {users.map((user) => (
-                  <tr
-                    key={user.ID_USUARIO}
-                    className="transition-colors hover:bg-slate-200"
-                  >
-                    <td className={td}>
-                      {user.ID_USUARIO}
-                    </td>
-                    <td className={td}>{user.NOME}</td>
-                    <td className={td}>{user.EMAIL}</td>
-                    <td className={td}>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          user.ROLE === "PROPRIETARIO"
-                            ? "bg-blue-300 text-blue-800"
-                            : "bg-cyan-300 text-cyan-800"
-                        }`}
-                      >
-                        {user.ROLE}
-                      </span>
-                    </td>
-                    <td className={td}>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          user.ATIVO
-                            ? "bg-active-status-bg text-active-status-text"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {user.ATIVO ? "Ativo" : "Inativo"}
-                      </span>
-                    </td>
-                    <td className={`${td} pr-8`}>
-                      {/* TODO Botões de Ação */}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <UserTable loading={loading} users={users} onDelete={handleDelete}/>
       </section>
     </main>
   );

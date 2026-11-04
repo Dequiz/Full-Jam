@@ -66,7 +66,7 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
               Fluxo de Caixa
             </li>
           </Link>
-          <Link to="/funcionario">
+          <Link to="/usuarios">
             <li
               className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "USER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/employee-selected.svg')]" : "before:content-[url('/navbar-icons/employee.svg')]"}`}
             >
