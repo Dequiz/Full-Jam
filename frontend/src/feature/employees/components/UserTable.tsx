@@ -63,7 +63,7 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
             {users.map((user) => (
               <tr
                 key={user.ID_USUARIO}
-                className="transition-colors hover:bg-slate-200"
+                className="transition-colors hover:bg-gray-50"
               >
                 <td className={td}>{user.ID_USUARIO}</td>
                 <td className={td}>{user.NOME}</td>
@@ -72,8 +72,8 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
                       user.ROLE === "PROPRIETARIO"
-                        ? "bg-blue-300 text-blue-800"
-                        : "bg-cyan-300 text-cyan-800"
+                        ? "bg-cyan-100 text-cyan-900"
+                        : "bg-orange-100 text-orange-900"
                     }`}
                   >
                     {user.ROLE}
