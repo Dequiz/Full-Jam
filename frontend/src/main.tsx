@@ -13,6 +13,7 @@ import { Toaster } from "sonner";
 import ProtectedRoute from "./routes/ProtectedRoute.tsx";
 import Users from "./feature/employees/Users.tsx";
 import UserForm from "./feature/employees/components/UserForm.tsx";
+import RoleRoute from "./routes/RoleRoute.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,14 +22,20 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path={"/"} element={<Login />} />
 
-        <Route element={<ProtectedRoute/>}>
-          <Route path={"/relatorio"} element={<Dashboard />} />
-          <Route path={"/estoque"} element={<Stock />} />
-          <Route path={"/pedidos"} element={<Order />} />
-          <Route path={"/fluxo-de-caixa"} element={<CashFlow />} />
-          <Route path={"/usuarios"} element={<Users />} />
-          <Route path={"/usuarios/adicionar"} element={<UserForm />} />
-          <Route path={"/usuarios/:id/editar"} element={<UserForm />} />
+        <Route element={<ProtectedRoute />}>
+          <Route
+            element={<RoleRoute allowed={["PROPRIETARIO", "FUNCIONARIO"]} />}
+          >
+            <Route path={"/estoque"} element={<Stock />} />
+            <Route path={"/pedidos"} element={<Order />} />
+            <Route path={"/fluxo-de-caixa"} element={<CashFlow />} />
+          </Route>
+          <Route element={<RoleRoute allowed={["PROPRIETARIO"]} />}>
+            <Route path={"/relatorio"} element={<Dashboard />} />
+            <Route path={"/usuarios"} element={<Users />} />
+            <Route path={"/usuarios/adicionar"} element={<UserForm />} />
+            <Route path={"/usuarios/:id/editar"} element={<UserForm />} />
+          </Route>
         </Route>
 
         <Route path={"/termos-de-uso"} element={<TermsOfUse />} />

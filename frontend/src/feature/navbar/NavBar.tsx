@@ -1,11 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import Swal from "sweetalert2";
 import { authService } from "../../service/authService.ts";
 import { toast } from "sonner";
+import type { RouteContext } from "../../routes/ProtectedRoute.tsx";
 
 type NavBarOptions = 'DASHBOARD' | 'STOCK' | 'ORDER' | 'CASHFLOW' | 'TERMSOFUSE' | 'PRIVACYPOLICY' | "USER";
 
 const NavBar = ({option}: {option:NavBarOptions}) => {
+
+  const context = useOutletContext<RouteContext | undefined>();
+  const isOwner = context?.role === "PROPRIETARIO"
 
   const showSignOutAlert = () => {
     Swal.fire({
@@ -38,13 +42,15 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
             "text-nav-text flex w-full flex-col flex-wrap justify-center gap-10 text-center"
           }
         >
-          <Link to="/relatorio">
-            <li
-              className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "DASHBOARD" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/dashboard-selected.svg')]" : "before:content-[url('/navbar-icons/dashboard.svg')]"}`}
-            >
-              Estatísticas
-            </li>
-          </Link>
+          {isOwner && (
+            <Link to="/relatorio">
+              <li
+                className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "DASHBOARD" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/dashboard-selected.svg')]" : "before:content-[url('/navbar-icons/dashboard.svg')]"}`}
+              >
+                Estatísticas
+              </li>
+            </Link>
+          )}
           <Link to="/estoque">
             <li
               className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "STOCK" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/stock-selected.svg')]" : "before:content-[url('/navbar-icons/stock.svg')]"}`}
@@ -66,13 +72,15 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
               Fluxo de Caixa
             </li>
           </Link>
-          <Link to="/usuarios">
-            <li
-              className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "USER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/employee-selected.svg')]" : "before:content-[url('/navbar-icons/employee.svg')]"}`}
-            >
-              Usuários
-            </li>
-          </Link>
+          {isOwner && (
+            <Link to="/usuarios">
+              <li
+                className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "USER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/employee-selected.svg')]" : "before:content-[url('/navbar-icons/employee.svg')]"}`}
+              >
+                Usuários
+              </li>
+            </Link>
+          )}
         </ol>
       </div>
 
