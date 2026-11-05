@@ -229,7 +229,7 @@ const UserForm = () => {
                 className="bg-accent-color hover:bg-button-hover hover:text-hover-text cursor-pointer rounded-lg px-6 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-60"
               >
                 {saving ? (
-                  <PulseLoader />
+                  <PulseLoader color="#ffffff" size={8} margin={1} />
                 ) : isEditing ? (
                   "Salvar alterações"
                 ) : (

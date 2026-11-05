@@ -79,7 +79,7 @@ const ProtectedRoute = () => {
   const role = profileMatches ? profile.role : null
   const roleLoading = Boolean(userId) && !profileMatches
 
-  if (loading || roleLoading) return <PulseLoader/>
+  if (loading || roleLoading) return <PulseLoader color="#000000" size={8} margin={1} />;
   if (!session || !role) return <Navigate to={"/"} replace/>
 
   return <Outlet context={{role} satisfies RouteContext}/>
