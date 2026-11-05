@@ -22,7 +22,11 @@ const Login = () => {
       await authService.signIn(email, password)
       navigate("/relatorio", {replace: true})
     } catch (error) {
-      toast.error("Login ou senha incorretos")
+      if (error instanceof Error && error.message.includes("Confirme seu email antes de entrar")) {
+        toast.error("Confirme seu email antes de entrar");
+      } else {
+        toast.error("Login ou senha incorretos");
+      }
       console.log(error);
     } finally {
       setIsLoading(false);
