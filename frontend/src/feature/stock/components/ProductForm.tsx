@@ -32,6 +32,29 @@ const ProductForm = ({
   const [quantity, setQuantity] = useState(
     initial ? String(initial.quantity) : "",
   );
+
+  const handleQuantityDelta = (delta: number) => {
+    const current = parseInt(quantity, 10);
+    const valid = Number.isNaN(current) ? 0 : current;
+    const next = Math.max(0, valid + delta);
+    setQuantity(String(next));
+    if (next === 0) {
+      setActive("Inativo");
+    }
+  };
+
+  const handleQuantityChange = (valStr: string) => {
+    const val = parseInt(valStr, 10);
+    if (valStr === "") {
+      setQuantity("");
+      return;
+    }
+    const safe = Number.isNaN(val) ? 0 : Math.max(0, val);
+    setQuantity(String(safe));
+    if (safe === 0) {
+      setActive("Inativo");
+    }
+  };
   const [code, setCode] = useState(initial?.code ?? "");
   const [active, setActive] = useState(
     initial?.active ? "Ativo" : initial ? "Inativo" : "",
@@ -268,25 +291,40 @@ const ProductForm = ({
               </label>
               <label className="text-[12px]">
                 Quantidade em estoque
-                <input
-                  required
-                  disabled={isSubmitting}
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  readOnly={mode === "edit"}
-                  placeholder="Informe a quantidade"
-                  className={`${inputClass} mt-1 text-[14px] ${
-                    mode === "edit" ? "bg-[#f5f7ff]" : ""
-                  }`}
-                />
+                <div className="mt-1 flex h-[56px] items-center rounded-[10px] border border-input-stroke bg-white px-3 focus-within:border-accent-color">
+                  <button
+                    type="button"
+                    disabled={isSubmitting || (parseInt(quantity, 10) || 0) <= 0}
+                    onClick={() => handleQuantityDelta(-1)}
+                    className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold text-accent-color transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    −
+                  </button>
+                  <input
+                    required
+                    disabled={isSubmitting}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={quantity}
+                    onChange={(e) => handleQuantityChange(e.target.value)}
+                    placeholder="0"
+                    className="h-full flex-1 bg-transparent px-2 text-center text-[16px] font-semibold text-[#1f2937] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleQuantityDelta(1)}
+                    className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold text-accent-color transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    +
+                  </button>
+                </div>
               </label>
             </div>
             {mode === "edit" && (
-              <p className="text-secondary-text mt-4 text-[10px]">
-                Código e quantidade são exibidos apenas para consulta.
+              <p className="text-secondary-text mt-4 text-[11px]">
+                O código é fixo para identificação. A quantidade e demais dados podem ser alterados e salvos.
               </p>
             )}
           </div>
