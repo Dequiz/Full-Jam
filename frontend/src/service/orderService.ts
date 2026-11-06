@@ -619,13 +619,16 @@ export const orderService = {
       throw new Error(validationError);
     }
 
-    const expectedStockStates = await prepareAndValidateStockDeltas(
-      [],
-      payload.items.map((i) => ({
-        productId: i.productId,
-        quantity: i.quantity,
-      })),
-    );
+    const isCancelled = payload.status === "Cancelado";
+    const expectedStockStates = isCancelled
+      ? []
+      : await prepareAndValidateStockDeltas(
+          [],
+          payload.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+          })),
+        );
 
     let customerId = payload.existingCustomerId ?? "";
     if (payload.customerMode === "new" && payload.newCustomer) {
@@ -699,6 +702,19 @@ export const orderService = {
       throw new Error(validationError);
     }
 
+    const { data: existingOrderData, error: existingOrderError } =
+      await supabase
+        .from("Pedido")
+        .select("STATUS")
+        .eq("ID_PEDIDO", orderId)
+        .single();
+
+    if (existingOrderError) {
+      throw new Error(
+        `Erro ao consultar pedido: ${existingOrderError.message}`,
+      );
+    }
+
     const { data: existingItemsData, error: existingItemsError } =
       await supabase
         .from("Item_Pedido")
@@ -711,22 +727,31 @@ export const orderService = {
       );
     }
 
-    const oldItems = (
-      (existingItemsData ?? []) as {
-        ID_PRODUTO: string;
-        QUANTIDADE: number | string;
-      }[]
-    ).map((r) => ({
-      productId: String(r.ID_PRODUTO),
-      quantity: Number(r.QUANTIDADE ?? 0),
-    }));
+    const wasCancelled = existingOrderData?.STATUS === "CANCELADO";
+    const willBeCancelled = payload.status === "Cancelado";
+
+    const oldEffectiveItems = wasCancelled
+      ? []
+      : (
+          (existingItemsData ?? []) as {
+            ID_PRODUTO: string;
+            QUANTIDADE: number | string;
+          }[]
+        ).map((r) => ({
+          productId: String(r.ID_PRODUTO),
+          quantity: Number(r.QUANTIDADE ?? 0),
+        }));
+
+    const newEffectiveItems = willBeCancelled
+      ? []
+      : payload.items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        }));
 
     const expectedStockStates = await prepareAndValidateStockDeltas(
-      oldItems,
-      payload.items.map((i) => ({
-        productId: i.productId,
-        quantity: i.quantity,
-      })),
+      oldEffectiveItems,
+      newEffectiveItems,
     );
 
     let customerId = payload.existingCustomerId ?? "";
@@ -800,20 +825,30 @@ export const orderService = {
   },
 
   deleteOrder: async (orderId: string): Promise<void> => {
+    const { data: existingOrderData } = await supabase
+      .from("Pedido")
+      .select("STATUS")
+      .eq("ID_PEDIDO", orderId)
+      .maybeSingle();
+
+    const isCancelled = existingOrderData?.STATUS === "CANCELADO";
+
     const { data: existingItemsData } = await supabase
       .from("Item_Pedido")
       .select("ID_PRODUTO, QUANTIDADE")
       .eq("ID_PEDIDO", orderId);
 
-    const oldItems = (
-      (existingItemsData ?? []) as {
-        ID_PRODUTO: string;
-        QUANTIDADE: number | string;
-      }[]
-    ).map((r) => ({
-      productId: String(r.ID_PRODUTO),
-      quantity: Number(r.QUANTIDADE ?? 0),
-    }));
+    const oldItems = isCancelled
+      ? []
+      : (
+          (existingItemsData ?? []) as {
+            ID_PRODUTO: string;
+            QUANTIDADE: number | string;
+          }[]
+        ).map((r) => ({
+          productId: String(r.ID_PRODUTO),
+          quantity: Number(r.QUANTIDADE ?? 0),
+        }));
 
     const expectedStockStates = await prepareAndValidateStockDeltas(
       oldItems,
