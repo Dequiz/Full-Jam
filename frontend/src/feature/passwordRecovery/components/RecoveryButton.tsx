@@ -12,7 +12,7 @@ const RecoveryButton = ({ isLoading, buttonText, onClick }: Config) => {
       type="button"
       disabled={isLoading}
       className={
-        "bg-accent-color w-full cursor-pointer rounded-3xl pt-2.5 pb-2.5 font-medium text-white"
+        "bg-accent-color hover:bg-button-hover hover:text-hover-text w-full cursor-pointer rounded-3xl pt-2.5 pb-2.5 font-medium text-white transition-colors"
       }
       onClick={onClick}
     >

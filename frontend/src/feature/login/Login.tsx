@@ -90,33 +90,35 @@ const Login = () => {
             antes de se autenticar no sistema.
           </p>
 
-          <button
-            className={
-              "bg-accent-color w-full max-w-32 cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-white"
-            }
+          <div className={"flex w-full max-w-md flex-col gap-4"}>
+            <button
+              className={
+                "bg-accent-color hover:bg-button-hover hover:text-hover-text cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-white transition-colors"
+              }
 
-            onClick={() => signIn()}
-          >
-            {isLoading ? (
-              <PulseLoader color="#ffffff" size={8} margin={1} />
-            ) : (
-              <p>Entrar</p>
-            )}
-          </button>
+              onClick={() => signIn()}
+            >
+              {isLoading ? (
+                <PulseLoader color="#ffffff" size={8} margin={1} />
+              ) : (
+                <p>Entrar</p>
+              )}
+            </button>
 
-          <button
-            className={
-              "bg-white border-2 border-secondary-text cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-secondary-text"
-            }
+            <button
+              className={
+                "border-secondary-text text-secondary-text hover:bg-gray-200 cursor-pointer rounded-3xl border-2 bg-white pt-2.5 pr-10 pb-2.5 pl-10 hover:border-black hover:text-black transition-colors"
+              }
 
-            onClick={() => navigate("/recuperar-senha")}
-          >
-            {isLoading ? (
-              <PulseLoader color="#ffffff" size={8} margin={1} />
-            ) : (
-              <p>Recuperar Senha</p>
-            )}
-          </button>
+              onClick={() => navigate("/recuperar-senha")}
+            >
+              {isLoading ? (
+                <PulseLoader color="#ffffff" size={8} margin={1} />
+              ) : (
+                <p>Recuperar Senha</p>
+              )}
+            </button>
+          </div>
         </div>
         <div
           className={
