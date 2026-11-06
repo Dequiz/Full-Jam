@@ -282,12 +282,15 @@ const Order = () => {
         toast.success("Pedido cadastrado com sucesso!");
       }
 
-      const [updatedOrders, updatedCustomers] = await Promise.all([
-        orderService.getOrders(),
-        orderService.getCustomers(),
-      ]);
+      const [updatedOrders, updatedCustomers, updatedProducts] =
+        await Promise.all([
+          orderService.getOrders(),
+          orderService.getCustomers(),
+          orderService.getAvailableProducts(),
+        ]);
       setOrders(updatedOrders);
       setCustomers(updatedCustomers);
+      setProducts(updatedProducts);
       setView("list");
       setSelectedId(null);
     } catch (error) {

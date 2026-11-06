@@ -100,6 +100,22 @@ const OrderForm = ({
     [items],
   );
 
+  const initialQuantitiesByProduct = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of initial?.items ?? []) {
+      map.set(item.productId, (map.get(item.productId) ?? 0) + item.quantity);
+    }
+    return map;
+  }, [initial]);
+
+  const getMaxAvailableStock = (productId: string): number => {
+    const product = products.find((p) => p.id === productId);
+    const currentDbStock = product?.quantity ?? 0;
+    const reservedByCurrentOrder =
+      initialQuantitiesByProduct.get(productId) ?? 0;
+    return currentDbStock + reservedByCurrentOrder;
+  };
+
   const handleAddProduct = () => {
     const product = products.find((p) => p.id === selectedProductId);
     if (!product) {
@@ -107,8 +123,26 @@ const OrderForm = ({
       return;
     }
 
-    if (!product.active) {
-      toast.error("Este produto está inativo e não pode ser adicionado.");
+    const maxStock = getMaxAvailableStock(product.id);
+    if (!product.active && maxStock <= 0) {
+      toast.error("Este produto está inativo e sem estoque disponível.");
+      return;
+    }
+
+    if (maxStock <= 0) {
+      toast.error(
+        `O produto "${product.name}" não possui unidades disponíveis em estoque.`,
+      );
+      return;
+    }
+
+    const existingItem = items.find((i) => i.productId === product.id);
+    const nextRequestedQty = (existingItem?.quantity ?? 0) + 1;
+
+    if (nextRequestedQty > maxStock) {
+      toast.error(
+        `Estoque insuficiente para "${product.name}". Disponível: ${maxStock} un.`,
+      );
       return;
     }
 
@@ -132,7 +166,7 @@ const OrderForm = ({
           productId: product.id,
           productName: product.name,
           productCode: product.code,
-          productActive: product.active,
+          productActive: product.active || maxStock > 0,
           productImage: product.image,
           quantity: 1,
           unitPrice: product.price,
@@ -143,10 +177,22 @@ const OrderForm = ({
   };
 
   const handleChangeItemQuantity = (productId: string, delta: number) => {
+    const currentItem = items.find((i) => i.productId === productId);
+    if (!currentItem) return;
+
+    const nextQty = Math.max(1, currentItem.quantity + delta);
+    const maxStock = getMaxAvailableStock(productId);
+
+    if (delta > 0 && nextQty > maxStock) {
+      toast.error(
+        `Estoque máximo disponível para "${currentItem.productName}": ${maxStock} un.`,
+      );
+      return;
+    }
+
     setItems((prev) =>
       prev.map((item) => {
         if (item.productId !== productId) return item;
-        const nextQty = Math.max(1, item.quantity + delta);
         return {
           ...item,
           quantity: nextQty,
@@ -476,13 +522,16 @@ const OrderForm = ({
                 {products.length === 0 && (
                   <option value="">Nenhum produto disponível no estoque</option>
                 )}
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} — {product.code} (
-                    {formatCurrency(product.price)}) •{" "}
-                    {product.active ? "Ativo" : "Inativo"}
-                  </option>
-                ))}
+                {products.map((product) => {
+                  const available = getMaxAvailableStock(product.id);
+                  return (
+                    <option key={product.id} value={product.id}>
+                      {product.name} — {product.code} (
+                      {formatCurrency(product.price)}) • Estoque: {available}{" "}
+                      un. • {product.active ? "Ativo" : "Inativo"}
+                    </option>
+                  );
+                })}
               </select>
             </label>
 

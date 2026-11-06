@@ -351,6 +351,143 @@ export const validateOrderPayload = (
   return null;
 };
 
+type ExpectedStockState = {
+  productId: string;
+  expectedQuantity: number;
+  expectedActive: boolean;
+};
+
+const prepareAndValidateStockDeltas = async (
+  oldItems: { productId: string; quantity: number }[],
+  newItems: { productId: string; quantity: number }[],
+): Promise<ExpectedStockState[]> => {
+  const deltaByProduct = new Map<string, number>();
+
+  for (const oldItem of oldItems) {
+    deltaByProduct.set(
+      oldItem.productId,
+      (deltaByProduct.get(oldItem.productId) ?? 0) - Number(oldItem.quantity),
+    );
+  }
+
+  for (const newItem of newItems) {
+    deltaByProduct.set(
+      newItem.productId,
+      (deltaByProduct.get(newItem.productId) ?? 0) + Number(newItem.quantity),
+    );
+  }
+
+  const affectedProductIds = Array.from(deltaByProduct.keys()).filter(
+    (id) => (deltaByProduct.get(id) ?? 0) !== 0,
+  );
+
+  if (affectedProductIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("Produto")
+    .select("ID_PRODUTO, NOME, QUANTIDADE_ESTOQUE, ATIVO")
+    .in("ID_PRODUTO", affectedProductIds);
+
+  if (error) {
+    throw new Error(`Erro ao verificar estoque dos produtos: ${error.message}`);
+  }
+
+  const productRows = (data ?? []) as {
+    ID_PRODUTO: string;
+    NOME: string;
+    QUANTIDADE_ESTOQUE: number | string;
+    ATIVO: boolean;
+  }[];
+
+  const rowMap = new Map(productRows.map((r) => [String(r.ID_PRODUTO), r]));
+  const expectedStates: ExpectedStockState[] = [];
+
+  for (const productId of affectedProductIds) {
+    const delta = deltaByProduct.get(productId) ?? 0;
+    const row = rowMap.get(productId);
+
+    if (!row) {
+      throw new Error("Um dos produtos selecionados não foi encontrado no estoque.");
+    }
+
+    const currentStock = Number(row.QUANTIDADE_ESTOQUE ?? 0);
+    if (delta > 0 && currentStock < delta) {
+      throw new Error(
+        `Estoque insuficiente para o produto "${row.NOME}". Disponível: ${currentStock}, Solicitado: ${delta}.`,
+      );
+    }
+
+    const expectedQuantity = Math.max(0, currentStock - delta);
+    const expectedActive =
+      expectedQuantity <= 0
+        ? false
+        : delta < 0
+          ? true
+          : Boolean(row.ATIVO);
+
+    expectedStates.push({
+      productId,
+      expectedQuantity,
+      expectedActive,
+    });
+  }
+
+  return expectedStates;
+};
+
+const ensureStockSynchronized = async (
+  expectedStates: ExpectedStockState[],
+): Promise<void> => {
+  if (expectedStates.length === 0) return;
+
+  const productIds = expectedStates.map((s) => s.productId);
+  const { data, error } = await supabase
+    .from("Produto")
+    .select("ID_PRODUTO, QUANTIDADE_ESTOQUE, ATIVO")
+    .in("ID_PRODUTO", productIds);
+
+  if (error) {
+    throw new Error(`Erro ao sincronizar estoque: ${error.message}`);
+  }
+
+  const currentMap = new Map(
+    ((data ?? []) as {
+      ID_PRODUTO: string;
+      QUANTIDADE_ESTOQUE: number | string;
+      ATIVO: boolean;
+    }[]).map((r) => [String(r.ID_PRODUTO), r]),
+  );
+
+  for (const state of expectedStates) {
+    const current = currentMap.get(state.productId);
+    if (!current) continue;
+
+    const currentQty = Number(current.QUANTIDADE_ESTOQUE ?? 0);
+    const currentActive = Boolean(current.ATIVO);
+
+    if (
+      currentQty !== state.expectedQuantity ||
+      currentActive !== state.expectedActive
+    ) {
+      const { error: updateErr } = await supabase
+        .from("Produto")
+        .update({
+          QUANTIDADE_ESTOQUE: state.expectedQuantity,
+          ATIVO: state.expectedActive,
+        })
+        .eq("ID_PRODUTO", state.productId);
+
+      if (updateErr) {
+        throw new Error(
+          `Erro ao atualizar estoque do produto: ${updateErr.message}`,
+        );
+      }
+    }
+  }
+};
+
 const resolveAuthenticatedUserId = async (): Promise<string | null> => {
   const { data: sessionData } = await supabase.auth.getSession();
   const authUserId = sessionData.session?.user?.id;
@@ -482,6 +619,14 @@ export const orderService = {
       throw new Error(validationError);
     }
 
+    const expectedStockStates = await prepareAndValidateStockDeltas(
+      [],
+      payload.items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+      })),
+    );
+
     let customerId = payload.existingCustomerId ?? "";
     if (payload.customerMode === "new" && payload.newCustomer) {
       const createdCustomer = await orderService.createCustomer(
@@ -530,6 +675,8 @@ export const orderService = {
       );
     }
 
+    await ensureStockSynchronized(expectedStockStates);
+
     const { data: fullOrder, error: fetchError } = await supabase
       .from("Pedido")
       .select("*, Cliente(*), Item_Pedido(*, Produto(*))")
@@ -551,6 +698,36 @@ export const orderService = {
     if (validationError) {
       throw new Error(validationError);
     }
+
+    const { data: existingItemsData, error: existingItemsError } =
+      await supabase
+        .from("Item_Pedido")
+        .select("ID_PRODUTO, QUANTIDADE")
+        .eq("ID_PEDIDO", orderId);
+
+    if (existingItemsError) {
+      throw new Error(
+        `Erro ao consultar itens atuais do pedido: ${existingItemsError.message}`,
+      );
+    }
+
+    const oldItems = (
+      (existingItemsData ?? []) as {
+        ID_PRODUTO: string;
+        QUANTIDADE: number | string;
+      }[]
+    ).map((r) => ({
+      productId: String(r.ID_PRODUTO),
+      quantity: Number(r.QUANTIDADE ?? 0),
+    }));
+
+    const expectedStockStates = await prepareAndValidateStockDeltas(
+      oldItems,
+      payload.items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+      })),
+    );
 
     let customerId = payload.existingCustomerId ?? "";
     if (payload.customerMode === "new" && payload.newCustomer) {
@@ -607,6 +784,8 @@ export const orderService = {
       );
     }
 
+    await ensureStockSynchronized(expectedStockStates);
+
     const { data: fullOrder, error: fetchError } = await supabase
       .from("Pedido")
       .select("*, Cliente(*), Item_Pedido(*, Produto(*))")
@@ -621,6 +800,26 @@ export const orderService = {
   },
 
   deleteOrder: async (orderId: string): Promise<void> => {
+    const { data: existingItemsData } = await supabase
+      .from("Item_Pedido")
+      .select("ID_PRODUTO, QUANTIDADE")
+      .eq("ID_PEDIDO", orderId);
+
+    const oldItems = (
+      (existingItemsData ?? []) as {
+        ID_PRODUTO: string;
+        QUANTIDADE: number | string;
+      }[]
+    ).map((r) => ({
+      productId: String(r.ID_PRODUTO),
+      quantity: Number(r.QUANTIDADE ?? 0),
+    }));
+
+    const expectedStockStates = await prepareAndValidateStockDeltas(
+      oldItems,
+      [],
+    );
+
     const { error: deleteItemsError } = await supabase
       .from("Item_Pedido")
       .delete()
@@ -629,6 +828,8 @@ export const orderService = {
     if (deleteItemsError) {
       throw new Error(deleteItemsError.message);
     }
+
+    await ensureStockSynchronized(expectedStockStates);
 
     const { error } = await supabase
       .from("Pedido")
