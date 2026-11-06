@@ -14,6 +14,7 @@ import ProtectedRoute from "./routes/ProtectedRoute.tsx";
 import Users from "./feature/employees/Users.tsx";
 import UserForm from "./feature/employees/components/UserForm.tsx";
 import RoleRoute from "./routes/RoleRoute.tsx";
+import PasswordRecovery from "./feature/passwordRecovery/PasswordRecovery.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
       <Toaster position="top-center" richColors />
       <Routes>
         <Route path={"/"} element={<Login />} />
+        <Route path={"/recuperar-senha"} element={<PasswordRecovery/>} />
 
         <Route element={<ProtectedRoute />}>
           <Route

@@ -103,6 +103,20 @@ const Login = () => {
               <p>Entrar</p>
             )}
           </button>
+
+          <button
+            className={
+              "bg-white border-2 border-secondary-text cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-secondary-text"
+            }
+
+            onClick={() => navigate("/recuperar-senha")}
+          >
+            {isLoading ? (
+              <PulseLoader color="#ffffff" size={8} margin={1} />
+            ) : (
+              <p>Recuperar Senha</p>
+            )}
+          </button>
         </div>
         <div
           className={
