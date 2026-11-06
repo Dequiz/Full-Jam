@@ -181,13 +181,20 @@ const OrderForm = ({
     if (!currentItem) return;
 
     const nextQty = Math.max(1, currentItem.quantity + delta);
-    const maxStock = getMaxAvailableStock(productId);
+    handleSetItemQuantity(productId, nextQty);
+  };
 
-    if (delta > 0 && nextQty > maxStock) {
+  const handleSetItemQuantity = (productId: string, rawQty: number) => {
+    const currentItem = items.find((i) => i.productId === productId);
+    if (!currentItem) return;
+
+    const maxStock = getMaxAvailableStock(productId);
+    const validQty = Math.max(1, Math.min(rawQty, maxStock));
+
+    if (rawQty > maxStock) {
       toast.error(
         `Estoque máximo disponível para "${currentItem.productName}": ${maxStock} un.`,
       );
-      return;
     }
 
     setItems((prev) =>
@@ -195,8 +202,8 @@ const OrderForm = ({
         if (item.productId !== productId) return item;
         return {
           ...item,
-          quantity: nextQty,
-          subtotal: Number((nextQty * item.unitPrice).toFixed(2)),
+          quantity: validQty,
+          subtotal: Number((validQty * item.unitPrice).toFixed(2)),
         };
       }),
     );
@@ -586,27 +593,43 @@ const OrderForm = ({
                     </td>
 
                     <td className="px-6 py-4">
-                      <div className="border-input-stroke mx-auto flex h-[38px] w-[112px] items-center justify-between rounded-[8px] border bg-white px-3">
+                      <div className="border-input-stroke mx-auto flex h-[38px] w-[120px] items-center justify-between rounded-[8px] border bg-white px-2">
                         <button
                           type="button"
                           disabled={isSubmitting || item.quantity <= 1}
                           onClick={() =>
                             handleChangeItemQuantity(item.productId, -1)
                           }
-                          className="text-accent-color cursor-pointer font-bold disabled:opacity-30"
+                          className="text-accent-color cursor-pointer px-1 text-base font-bold transition hover:opacity-80 disabled:opacity-30"
                         >
                           −
                         </button>
-                        <span className="font-medium text-[#111827]">
-                          {item.quantity}
-                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={getMaxAvailableStock(item.productId)}
+                          disabled={isSubmitting}
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            handleSetItemQuantity(
+                              item.productId,
+                              Number.isNaN(val) ? 1 : val,
+                            );
+                          }}
+                          className="w-12 text-center text-[14px] font-medium text-[#111827] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
                         <button
                           type="button"
-                          disabled={isSubmitting}
+                          disabled={
+                            isSubmitting ||
+                            item.quantity >=
+                              getMaxAvailableStock(item.productId)
+                          }
                           onClick={() =>
                             handleChangeItemQuantity(item.productId, 1)
                           }
-                          className="text-accent-color cursor-pointer font-bold"
+                          className="text-accent-color cursor-pointer px-1 text-base font-bold transition hover:opacity-80 disabled:opacity-30"
                         >
                           +
                         </button>
