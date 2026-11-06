@@ -31,7 +31,6 @@ const Login = () => {
       } else {
         toast.error("Login ou senha incorretos");
       }
-      console.log(error);
     } finally {
       setIsLoading(false);
     }

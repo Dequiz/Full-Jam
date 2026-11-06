@@ -29,7 +29,6 @@ const PasswordRecovery = () => {
       toast.error(
         "Não foi possível enviar o código. Verifique sua conexão e tente novamente!",
       );
-      console.log(error);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +48,6 @@ const PasswordRecovery = () => {
       setSentCode(false);
     } catch (error) {
       toast.error(`Erro: ${error}`);
-      console.log(error);
     } finally {
       setIsLoading(false);
     }
