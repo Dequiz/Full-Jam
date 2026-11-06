@@ -62,7 +62,9 @@ const Login = () => {
             />
           </div>
 
-          <div className={"mb-3 flex w-full max-w-md flex-col gap-2.5 text-start"}>
+          <div
+            className={"mb-3 flex w-full max-w-md flex-col gap-2.5 text-start"}
+          >
             <label className={"text-base font-bold text-black"}>
               Senha
               <span className={"align-top text-xs text-red-500"}> *</span>
@@ -111,7 +113,8 @@ const Login = () => {
               className={
                 "bg-accent-color hover:bg-button-hover hover:text-hover-text cursor-pointer rounded-3xl pt-2.5 pr-10 pb-2.5 pl-10 text-white transition-colors"
               }
-
+              type="button"
+              disabled={isLoading}
               onClick={() => signIn()}
             >
               {isLoading ? (
