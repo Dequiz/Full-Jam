@@ -339,7 +339,8 @@ export const productService = {
       NOME: payload.name.trim(),
       DESCRICAO: payload.description?.trim() ?? "",
       PRECO: Number(payload.price),
-      ATIVO: payload.active,
+      QUANTIDADE_ESTOQUE: Number(payload.quantity),
+      ATIVO: Number(payload.quantity) <= 0 ? false : payload.active,
     };
 
     const firstAttempt = await supabase
