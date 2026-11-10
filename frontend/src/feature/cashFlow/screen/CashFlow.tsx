@@ -139,10 +139,12 @@ export default function CashFlow() {
       <main className="min-w-0 flex-1 px-8 py-10 max-xl:px-6 max-md:px-4">
         <div className="mx-auto max-w-[1440px]">
           <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-[34px] leading-tight font-bold text-black">
-                Fluxo de Caixa
-              </h1>
+            <div className={"flex flex-col items-start gap-2.5"}>
+              <div className={"rounded-2xl p-2.5 shadow-[0_0_4px_#00000040]"}>
+                <h1 className={"text-4xl font-bold text-black"}>
+                  Fluxo de Caixa
+                </h1>
+              </div>
               <p className="text-secondary-text mt-2 text-sm">
                 Acompanhe as entradas, saídas e o resultado financeiro.
               </p>
