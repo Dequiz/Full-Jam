@@ -11,8 +11,8 @@ import PrivacyPolicy from "./feature/privacyPolicy/PrivacyPolicy.tsx";
 import Login from "./feature/login/Login.tsx";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./routes/ProtectedRoute.tsx";
-import Users from "./feature/employees/Users.tsx";
-import UserForm from "./feature/employees/components/UserForm.tsx";
+import Users from "./feature/users/Users.tsx";
+import UserForm from "./feature/users/components/UserForm.tsx";
 import RoleRoute from "./routes/RoleRoute.tsx";
 import PasswordRecovery from "./feature/passwordRecovery/PasswordRecovery.tsx";
 
