@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import NavBar from "../../navbar/NavBar.tsx";
 import { useOutletContext } from "react-router-dom";
 import type { RouteContext } from "../../../routes/ProtectedRoute.tsx";
+import EditButton from "../../../core/EditButton.tsx";
+import DeleteButton from "../../../core/DeleteButton.tsx";
 
 type TransactionType = "Entrada" | "Saída";
 type Transaction = {
@@ -353,20 +355,20 @@ export default function CashFlow() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => openEdit(item)}
-                            aria-label={`Editar ${item.description}`}
-                            className="text-accent-color grid size-8 place-items-center rounded-lg bg-slate-100 transition hover:bg-blue-100"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            onClick={() => setDeletingId(item.id)}
-                            aria-label={`Excluir ${item.description}`}
-                            className="grid size-8 place-items-center rounded-lg bg-slate-100 text-rose-600 transition hover:bg-rose-100"
-                          >
-                            ×
-                          </button>
+                          <EditButton
+                            objectToEdit={{
+                              id: item.id,
+                            }}
+                            onEdit={() =>
+                              openEdit(item)
+                            }
+                          />
+                          <DeleteButton
+                            objectToDelete={{
+                              id: item.id,
+                            }}
+                            onDelete={() => setDeletingId(item.id)}
+                          />
                         </div>
                       </td>
                     </tr>
