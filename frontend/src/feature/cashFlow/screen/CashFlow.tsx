@@ -394,10 +394,6 @@ export default function CashFlow() {
               )}
             </div>
           </section>
-          <p className="text-secondary-text mt-4 text-[11px]">
-            Os dados são salvos neste navegador. A sincronização entre
-            dispositivos depende de uma integração futura com o banco de dados.
-          </p>
         </div>
       </main>
 
