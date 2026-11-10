@@ -30,7 +30,7 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
   }
 
   return (
-    <nav className="bg-accent-color flex min-h-screen w-full max-w-72 shrink-0 flex-col justify-between gap-6 px-5 pt-14 pb-8 font-[Poppins]">
+    <nav className="bg-accent-color flex h-screen w-full max-w-72 shrink-0 flex-col justify-between gap-6 px-5 pt-14 pb-8 font-[Poppins] sticky top-0">
       <div className={"flex flex-col gap-6"}>
         <h1 className={"text-nav-text text-4xl font-bold"}>Logo</h1>
         <div className="h-px w-full bg-white/20" />
@@ -39,13 +39,13 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
 
         <ol
           className={
-            "text-nav-text flex w-full flex-col flex-wrap justify-center gap-10 text-center"
+            "text-nav-text flex w-full flex-col flex-wrap justify-start gap-10 text-start"
           }
         >
           {isOwner && (
             <Link to="/relatorio">
               <li
-                className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "DASHBOARD" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/dashboard-selected.svg')]" : "before:content-[url('/navbar-icons/dashboard.svg')]"}`}
+                className={`relative flex gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "DASHBOARD" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 px-5 before:content-[url('/navbar-icons/dashboard-selected.svg')]" : "before:content-[url('/navbar-icons/dashboard.svg')]"}`}
               >
                 Estatísticas
               </li>
@@ -53,21 +53,21 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
           )}
           <Link to="/estoque">
             <li
-              className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "STOCK" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/stock-selected.svg')]" : "before:content-[url('/navbar-icons/stock.svg')]"}`}
+              className={`relative flex gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "STOCK" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 px-5 before:content-[url('/navbar-icons/stock-selected.svg')]" : "before:content-[url('/navbar-icons/stock.svg')]"}`}
             >
               Estoque
             </li>
           </Link>
           <Link to="/pedidos">
             <li
-              className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "ORDER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/order-selected.svg')]" : "before:content-[url('/navbar-icons/order.svg')]"}`}
+              className={`relative flex gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "ORDER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 px-5 before:content-[url('/navbar-icons/order-selected.svg')]" : "before:content-[url('/navbar-icons/order.svg')]"}`}
             >
               Pedidos
             </li>
           </Link>
           <Link to="/fluxo-de-caixa">
             <li
-              className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "CASHFLOW" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/cashflow-selected.svg')]" : "before:content-[url('/navbar-icons/cashflow.svg')]"}`}
+              className={`relative flex gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "CASHFLOW" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 px-5 before:content-[url('/navbar-icons/cashflow-selected.svg')]" : "before:content-[url('/navbar-icons/cashflow.svg')]"}`}
             >
               Fluxo de Caixa
             </li>
@@ -75,7 +75,7 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
           {isOwner && (
             <Link to="/usuarios">
               <li
-                className={`relative flex items-center justify-center gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "USER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 before:content-[url('/navbar-icons/employee-selected.svg')]" : "before:content-[url('/navbar-icons/employee.svg')]"}`}
+                className={`relative flex gap-2.5 rounded-[15px] text-[17px] transition before:align-middle ${option == "USER" ? "bg-active-option-nav text-active-option-text rounded-[20px] py-5 px-5 before:content-[url('/navbar-icons/employee-selected.svg')]" : "before:content-[url('/navbar-icons/employee.svg')]"}`}
               >
                 Usuários
               </li>
