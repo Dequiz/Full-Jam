@@ -1,5 +1,5 @@
 import {supabase} from "../lib/supabase/supabaseclient.ts";
-import type { User } from "../feature/employees/Users.tsx";
+import type { User } from "../feature/users/Users.tsx";
 import { signUpClient } from "../lib/supabase/signUpClient.ts";
 
 export interface CreateUserInput {
