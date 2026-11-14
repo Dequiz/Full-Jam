@@ -29,12 +29,10 @@ const PrivacyPolicy = () => {
 
           <p>
             Esta Política explica como a Full Jam, responsável pelo website
-            Kaysen (“Kaysen”, “Empresa”, “nós”), trata dados pessoais quando
-            proprietários e funcionários de pequenos comércios utilizam o
+            Kaysen (“Kaysen”, “Empresa”, “nós”), trata dados pessoais quando o
+            proprietário de um pequeno comércio ou seus funcionários utilizam o
             serviço. O Kaysen é um website de gestão com módulos de estoque,
-            pedidos e vendas e fluxo de caixa. Os dois grupos acessam o serviço
-            por contas individuais; o perfil e as permissões devem limitar o
-            acesso às funções autorizadas para cada pessoa.
+            pedidos e vendas e fluxo de caixa.
           </p>
 
           <p>
@@ -52,10 +50,9 @@ const PrivacyPolicy = () => {
             </p>
             <ul className="list-disc space-y-2 pl-6">
               <li>
-                <strong>Dados da conta:</strong> e-mail, identificador da conta,
-                vínculo com o comércio, perfil de acesso (proprietário ou
-                funcionário) e informações necessárias para autenticação e
-                administração das permissões.
+                <strong>Dados da conta:</strong> e-mail, identificadores de
+                usuário e informações necessárias para autenticação e
+                administração do acesso.
               </li>
               <li>
                 <strong>Dados da operação do comércio:</strong> produtos,
@@ -94,10 +91,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-xl font-semibold">2. Como usamos os dados</h2>
             <p>Usamos os dados para:</p>
             <ul className="list-disc space-y-2 pl-6">
-              <li>
-                criar e administrar contas de proprietários e funcionários,
-                autenticar usuários e aplicar os perfis de acesso;
-              </li>
+              <li>criar e administrar contas e autenticar usuários;</li>
               <li>disponibilizar estoque, pedidos/vendas e fluxo de caixa;</li>
               <li>
                 relacionar operações ao usuário responsável, manter o histórico
@@ -140,21 +134,15 @@ const PrivacyPolicy = () => {
               consentimento quando necessário.
             </p>
             <p>
-              Para dados de conta, autenticação, segurança e administração do
-              próprio Kaysen, a Empresa determina as finalidades e atua como
-              controladora. O proprietário ou administrador do comércio gerencia
-              a contratação e, conforme as funções disponíveis, autoriza ou
-              revoga o acesso dos funcionários. Os funcionários utilizam contas
-              próprias e devem seguir as orientações do comércio.
-            </p>
-            <p>
-              Para dados pessoais que o comércio eventualmente inclua nos
-              registros operacionais, o comércio contratante determina as
-              finalidades da sua atividade e, conforme o caso, atua como
-              controlador; o Kaysen trata esses dados para prestar o serviço,
-              segundo as instruções e condições acordadas. O comércio deve ter
-              fundamento adequado para inserir dados pessoais no sistema e
-              orientar seus funcionários sobre o uso.
+              Para dados de conta, segurança e administração do próprio Kaysen,
+              a Empresa determina as finalidades e atua como controladora. Para
+              dados pessoais que o comércio eventualmente inclua nos registros
+              operacionais, o comércio contratante determina as finalidades da
+              sua atividade e, conforme o caso, atua como controlador; o Kaysen
+              trata esses dados para prestar o serviço, segundo as instruções e
+              condições acordadas. O comércio deve ter fundamento adequado para
+              inserir dados pessoais no sistema e orientar seus funcionários
+              sobre o uso.
             </p>
           </section>
 
@@ -298,12 +286,22 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold">11. Contato</h2>
+            <h2 className="text-xl font-semibold">11. Fale Conosco</h2>
             <p>
-              Dúvidas ou solicitações sobre esta Política e o tratamento de
-              dados pessoais podem ser enviadas pelo canal de privacidade
-              indicado no website Kaysen.
+              Se Você tiver qualquer dúvida sobre esta Política de Privacidade,
+              Você pode entrar em contato conosco:
             </p>
+            <ul className="list-disc pl-6">
+              <li>
+                Por e-mail:{" "}
+                <a
+                  className="text-blue-700 hover:underline"
+                  href="mailto:suporte@kaysen.com"
+                >
+                  suporte@kaysen.com
+                </a>
+              </li>
+            </ul>
           </section>
         </article>
       </main>
