@@ -10,10 +10,16 @@ import {
   type ProductSort,
   type ProductSortField,
 } from "../../../service/productService.ts";
-import DeleteProductModal from "../components/DeleteProductModal.tsx";
 import ProductForm from "../components/ProductForm.tsx";
 import StockTable from "../components/StockTable.tsx";
 import StockToolbar from "../components/StockToolbar.tsx";
+import DeleteModal, {
+  DeleteItemCard,
+  StatusBadge,
+} from "../../../core/DeleteModal.tsx";
+
+const formatCurrency = (value: number | undefined) =>
+  value != undefined ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : null;
 
 const emptyFilters: ProductFilters = {
   name: "",
@@ -355,12 +361,23 @@ export default function Stock() {
               />
             </>
           ) : view === "delete" ? (
-            <DeleteProductModal
-              product={selected}
+            <DeleteModal
+              title="Excluir produto?"
+              description="Você está prestes a excluir o produto abaixo do estoque. Confira a identificação antes de continuar."
+              warning="Esta ação não pode ser desfeita. Apenas o registro selecionado será removido da tabela."
+              confirmLabel="Excluir produto"
               isSubmitting={isSubmitting}
               onCancel={back}
               onConfirm={confirmDelete}
-            />
+            >
+              <DeleteItemCard
+                image={selected?.image}
+                title={selected?.name}
+                badge={<StatusBadge active={selected?.active} />}
+                subtitle={`Código ${selected?.code} • ID ${selected?.id}`}
+                details={`${formatCurrency(selected?.price)} • ${selected?.quantity} unidades em estoque`}
+              />
+            </DeleteModal>
           ) : (
             <ProductForm
               mode={view}

@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase/supabaseclient.ts";
 
-export type Product = {
+export interface Product {
   id: string;
   name: string;
   description: string;
