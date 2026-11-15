@@ -4,20 +4,30 @@ import { userService } from "../../service/userService.ts";
 import { toast } from "sonner";
 import UserTable from "./components/UserTable.tsx";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import DeleteModal, {
+  DeleteItemCard,
+  StatusBadge,
+} from "../../core/DeleteModal.tsx";
 
 export interface User {
-  ID_USUARIO: string
-  NOME: string
-  EMAIL: string
-  ROLE: "PROPRIETARIO" | "FUNCIONARIO"
-  ATIVO: boolean
+  ID_USUARIO: string;
+  NOME: string;
+  EMAIL: string;
+  ROLE: "PROPRIETARIO" | "FUNCIONARIO";
+  ATIVO: boolean;
 }
+
+const roleLabel: Record<User["ROLE"], string> = {
+  PROPRIETARIO: "Proprietário",
+  FUNCIONARIO: "Funcionário",
+};
 
 const Users = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const getUsers = async () => {
@@ -39,34 +49,40 @@ const Users = () => {
       }
     };
 
-    getUsers()
-  }, [])
+    getUsers();
+  }, []);
 
-  const handleDelete = async (id: string) => {
-    const result = await Swal.fire({
-      title: "Excluir usuário?",
-      text: "Essa ação não pode ser desfeita.",
-      showCancelButton: true,
-      confirmButtonColor: "#395CEB",
-      cancelButtonColor: "#292929",
-      confirmButtonText: "Excluir",
-      cancelButtonText: "Cancelar",
-    });
+  const handleDelete = (id: string) => {
+    const user = users.find((item) => item.ID_USUARIO === id);
+    if (user) setUserToDelete(user);
+  };
 
-    if (!result.isConfirmed) return;
+  const cancelDelete = () => {
+    if (isDeleting) return;
+    setUserToDelete(null);
+  };
 
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await userService.deleteUser(id)
-      setUsers((prev) => prev.filter((user) => user.ID_USUARIO !== id))
-      toast.success("Usuário excluido com sucesso!")
+      await userService.deleteUser(userToDelete.ID_USUARIO);
+      setUsers((prev) =>
+        prev.filter((user) => user.ID_USUARIO !== userToDelete.ID_USUARIO),
+      );
+      toast.success("Usuário excluído com sucesso!");
+      setUserToDelete(null);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "Ocorreu um erro desconhecido, entre em contato com o administrador",
       );
+    } finally {
+      setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <main className={"flex"}>
@@ -88,8 +104,27 @@ const Users = () => {
           </button>
         </header>
 
-        <UserTable loading={loading} users={users} onDelete={handleDelete}/>
+        <UserTable loading={loading} users={users} onDelete={handleDelete} />
       </section>
+
+      {userToDelete && (
+        <DeleteModal
+          title="Excluir usuário?"
+          description="Você está prestes a excluir o usuário abaixo. Confira a identificação antes de continuar."
+          warning="Esta ação não pode ser desfeita. Apenas o usuário selecionado será removido da tabela."
+          confirmLabel="Excluir usuário"
+          isSubmitting={isDeleting}
+          onCancel={cancelDelete}
+          onConfirm={confirmDelete}
+        >
+          <DeleteItemCard
+            title={userToDelete.NOME}
+            badge={<StatusBadge active={userToDelete.ATIVO} />}
+            subtitle={userToDelete.EMAIL}
+            details={roleLabel[userToDelete.ROLE]}
+          />
+        </DeleteModal>
+      )}
     </main>
   );
 };

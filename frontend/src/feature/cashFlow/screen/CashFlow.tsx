@@ -4,6 +4,7 @@ import { useOutletContext } from "react-router-dom";
 import type { RouteContext } from "../../../routes/ProtectedRoute.tsx";
 import EditButton from "../../../core/EditButton.tsx";
 import DeleteButton from "../../../core/DeleteButton.tsx";
+import DeleteModal, { DeleteItemCard } from "../../../core/DeleteModal.tsx";
 
 type TransactionType = "Entrada" | "Saída";
 type Transaction = {
@@ -20,8 +21,8 @@ type Period = "all" | "month" | "year";
 const STORAGE_KEY = "kaysen-cashflow-transactions";
 const today = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => new Date().toISOString().slice(0, 7);
-const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const dateLabel = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
+const money = (value: number | undefined) => value != undefined ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
+const dateLabel = (value: string | undefined) => value != undefined ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR");
 const categories = {
   Entrada: ["Vendas", "Serviços", "Investimentos", "Outros"],
   Saída: ["Compras", "Aluguel", "Salários", "Contas", "Impostos", "Marketing", "Outros"],
@@ -44,7 +45,8 @@ const secondaryButton = "inline-flex h-10 items-center justify-center rounded-[9
 const fieldClass = "mt-1 h-11 w-full rounded-[9px] border border-input-stroke bg-white px-3 text-sm text-[#1f2937] outline-none transition focus:border-accent-color focus:ring-2 focus:ring-blue-100";
 
 export default function CashFlow() {
-  const [transactions, setTransactions] = useState<Transaction[]>(readTransactions);
+  const [transactions, setTransactions] =
+    useState<Transaction[]>(readTransactions);
   const [period, setPeriod] = useState<Period>("month");
   const [chartMonths, setChartMonths] = useState<6 | 12 | 18 | 24>(6);
   const [typeFilter, setTypeFilter] = useState("Todos");
@@ -56,33 +58,56 @@ export default function CashFlow() {
   const [formError, setFormError] = useState("");
 
   const context = useOutletContext<RouteContext | undefined>();
-  const isOwner = context?.role === "PROPRIETARIO"
+  const isOwner = context?.role === "PROPRIETARIO";
 
   const persist = (next: Transaction[]) => {
     setTransactions(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* Storage may be unavailable. */
+    }
   };
 
-  const filtered = useMemo(() => transactions
-    .filter((item) => {
-      const date = new Date(`${item.date}T12:00:00`);
-      const now = new Date();
-      const inPeriod = period === "all"
-        || (period === "month" && item.date.slice(0, 7) === currentMonth())
-        || (period === "year" && date.getFullYear() === now.getFullYear());
-      const inType = typeFilter === "Todos" || item.type === typeFilter;
-      const inSearch = `${item.description} ${item.category}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"));
-      return inPeriod && inType && inSearch;
-    })
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)),
-  [transactions, period, typeFilter, search]);
+  const filtered = useMemo(
+    () =>
+      transactions
+        .filter((item) => {
+          const date = new Date(`${item.date}T12:00:00`);
+          const now = new Date();
+          const inPeriod =
+            period === "all" ||
+            (period === "month" && item.date.slice(0, 7) === currentMonth()) ||
+            (period === "year" && date.getFullYear() === now.getFullYear());
+          const inType = typeFilter === "Todos" || item.type === typeFilter;
+          const inSearch = `${item.description} ${item.category}`
+            .toLocaleLowerCase("pt-BR")
+            .includes(search.toLocaleLowerCase("pt-BR"));
+          return inPeriod && inType && inSearch;
+        })
+        .sort(
+          (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+        ),
+    [transactions, period, typeFilter, search],
+  );
 
-  const totals = useMemo(() => filtered.reduce((acc, item) => {
-    if (item.type === "Entrada") acc.income += item.amount;
-    else acc.expenses += item.amount;
-    return acc;
-  }, { income: 0, expenses: 0 }), [filtered]);
+  const totals = useMemo(
+    () =>
+      filtered.reduce(
+        (acc, item) => {
+          if (item.type === "Entrada") acc.income += item.amount;
+          else acc.expenses += item.amount;
+          return acc;
+        },
+        { income: 0, expenses: 0 },
+      ),
+    [filtered],
+  );
   const balance = totals.income - totals.expenses;
+
+  const transactionToDelete = transactions.find(
+    (item) => item.id === deletingId,
+  );
 
   const openNew = () => {
     setEditingId(null);
@@ -92,25 +117,62 @@ export default function CashFlow() {
   };
   const openEdit = (item: Transaction) => {
     setEditingId(item.id);
-    setDraft({ description: item.description, category: item.category, type: item.type, amount: item.amount, date: item.date });
+    setDraft({
+      description: item.description,
+      category: item.category,
+      type: item.type,
+      amount: item.amount,
+      date: item.date,
+    });
     setFormError("");
     setFormOpen(true);
   };
-  const closeForm = () => { setFormOpen(false); setEditingId(null); setFormError(""); };
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setFormError("");
+  };
 
   const saveTransaction = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!draft.description.trim()) { setFormError("Informe uma descrição para a movimentação."); return; }
-    if (!Number.isFinite(draft.amount) || draft.amount <= 0) { setFormError("Informe um valor maior que zero."); return; }
-    if (!draft.date) { setFormError("Informe a data da movimentação."); return; }
-    const normalized = { ...draft, description: draft.description.trim(), amount: Number(draft.amount) };
+    if (!draft.description.trim()) {
+      setFormError("Informe uma descrição para a movimentação.");
+      return;
+    }
+    if (!Number.isFinite(draft.amount) || draft.amount <= 0) {
+      setFormError("Informe um valor maior que zero.");
+      return;
+    }
+    if (!draft.date) {
+      setFormError("Informe a data da movimentação.");
+      return;
+    }
+    const normalized = {
+      ...draft,
+      description: draft.description.trim(),
+      amount: Number(draft.amount),
+    };
     if (editingId) {
-      persist(transactions.map((item) => item.id === editingId ? { ...normalized, id: editingId } : item));
+      persist(
+        transactions.map((item) =>
+          item.id === editingId ? { ...normalized, id: editingId } : item,
+        ),
+      );
     } else {
-      persist([{ ...normalized, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }, ...transactions]);
+      persist([
+        {
+          ...normalized,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        },
+        ...transactions,
+      ]);
     }
     closeForm();
   };
+
+  const cancelOperation = () => {
+    setDeletingId(null);
+  }
 
   const removeTransaction = () => {
     if (!deletingId) return;
@@ -121,19 +183,34 @@ export default function CashFlow() {
   const monthData = useMemo(() => {
     const now = new Date();
     return Array.from({ length: chartMonths }, (_, index) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - (chartMonths - 1 - index), 1);
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth() - (chartMonths - 1 - index),
+        1,
+      );
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const entries = transactions.filter((item) => item.date.slice(0, 7) === key);
+      const entries = transactions.filter(
+        (item) => item.date.slice(0, 7) === key,
+      );
       return {
         key,
-        label: date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+        label: date
+          .toLocaleDateString("pt-BR", { month: "short" })
+          .replace(".", ""),
         year: String(date.getFullYear()).slice(-2),
-        income: entries.filter((item) => item.type === "Entrada").reduce((sum, item) => sum + item.amount, 0),
-        expenses: entries.filter((item) => item.type === "Saída").reduce((sum, item) => sum + item.amount, 0),
+        income: entries
+          .filter((item) => item.type === "Entrada")
+          .reduce((sum, item) => sum + item.amount, 0),
+        expenses: entries
+          .filter((item) => item.type === "Saída")
+          .reduce((sum, item) => sum + item.amount, 0),
       };
     });
   }, [transactions, chartMonths]);
-  const chartMax = Math.max(1, ...monthData.flatMap((month) => [month.income, month.expenses]));
+  const chartMax = Math.max(
+    1,
+    ...monthData.flatMap((month) => [month.income, month.expenses]),
+  );
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-[#1f2937]">
@@ -359,9 +436,7 @@ export default function CashFlow() {
                             objectToEdit={{
                               id: item.id,
                             }}
-                            onEdit={() =>
-                              openEdit(item)
-                            }
+                            onEdit={() => openEdit(item)}
                           />
                           <DeleteButton
                             objectToDelete={{
@@ -522,49 +597,33 @@ export default function CashFlow() {
       )}
 
       {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-title"
-            className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-2xl"
-          >
-            <h2 id="delete-title" className="text-lg font-bold">
-              Excluir movimentação?
-            </h2>
-            <p className="text-secondary-text mt-2 text-sm leading-6">
-              Essa ação removerá o lançamento do histórico e atualizará os
-              totais financeiros. Não é possível desfazê-la.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setDeletingId(null)}
-                className={secondaryButton}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={removeTransaction}
-                className="inline-flex h-10 items-center justify-center rounded-[9px] bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700"
-              >
-                Excluir
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteModal
+          title="Excluir movimentação?"
+          description={
+            "Você está prestes a remover um registro do histórico do fluxo de caixa."
+          }
+          warning={
+            "Essa ação removerá o lançamento do histórico e atualizará os totais financeiros. Não é possível desfazê-la"
+          }
+          confirmLabel="Excluir movimentação"
+          onCancel={cancelOperation}
+          onConfirm={removeTransaction}
+        >
+          <DeleteItemCard
+            title={transactionToDelete?.description}
+            subtitle={`${transactionToDelete?.category} • ${transactionToDelete?.type}`}
+            details={dateLabel(transactionToDelete?.date)}
+            aside={money(transactionToDelete?.amount)}
+          />
+        </DeleteModal>
       )}
     </div>
   );
 }
 
-function SummaryCard({ title, value, detail, tone, icon }: { title: string; value: string; detail: string; tone: "blue" | "green" | "red"; icon: string }) {
-  const styles = {
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-emerald-50 text-emerald-700",
-    red: "bg-rose-50 text-rose-700",
-  };
+function SummaryCard({ title, value, detail }: { title: string; value: string; detail: string; }) {
   return <article className="rounded-[15px] border border-input-stroke bg-white p-5 shadow-sm">
-    <div className="flex items-center justify-between"><p className="text-sm font-medium text-secondary-text">{title}</p><span className={`grid size-10 place-items-center rounded-xl text-sm font-bold ${styles[tone]}`}>{icon}</span></div>
+    <div className="flex items-center justify-between"><p className="text-sm font-medium text-secondary-text">{title}</p></div>
     <p className="mt-4 text-[26px] font-bold tracking-tight text-[#202938] max-sm:text-[22px]">{value}</p><p className="mt-1 text-xs text-secondary-text">{detail}</p>
   </article>;
 }
