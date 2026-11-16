@@ -21,28 +21,51 @@ type Period = "all" | "month" | "year";
 const STORAGE_KEY = "kaysen-cashflow-transactions";
 const today = () => new Date().toISOString().slice(0, 10);
 const currentMonth = () => new Date().toISOString().slice(0, 7);
-const money = (value: number | undefined) => value != undefined ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "";
-const dateLabel = (value: string | undefined) => value != undefined ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR");
+const money = (value: number | undefined) =>
+  value != undefined
+    ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : "";
+const dateLabel = (value: string | undefined) =>
+  value != undefined
+    ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR")
+    : new Date().toLocaleDateString("pt-BR");
 const categories = {
   Entrada: ["Vendas", "Serviços", "Investimentos", "Outros"],
-  Saída: ["Compras", "Aluguel", "Salários", "Contas", "Impostos", "Marketing", "Outros"],
+  Saída: [
+    "Compras",
+    "Aluguel",
+    "Salários",
+    "Contas",
+    "Impostos",
+    "Marketing",
+    "Outros",
+  ],
 };
-const emptyDraft: Draft = { description: "", category: "Vendas", type: "Entrada", amount: 0, date: today() };
+const emptyDraft: Draft = {
+  description: "",
+  category: "Vendas",
+  type: "Entrada",
+  amount: 0,
+  date: today(),
+};
 
 function readTransactions(): Transaction[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     const parsed: unknown = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed as Transaction[] : [];
+    return Array.isArray(parsed) ? (parsed as Transaction[]) : [];
   } catch {
     return [];
   }
 }
 
-const primaryButton = "inline-flex h-11 items-center justify-center rounded-[10px] bg-accent-color px-5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
-const secondaryButton = "inline-flex h-10 items-center justify-center rounded-[9px] border border-input-stroke bg-white px-4 text-sm font-semibold text-accent-color transition hover:bg-slate-50";
-const fieldClass = "mt-1 h-11 w-full rounded-[9px] border border-input-stroke bg-white px-3 text-sm text-[#1f2937] outline-none transition focus:border-accent-color focus:ring-2 focus:ring-blue-100";
+const primaryButton =
+  "inline-flex h-11 items-center justify-center rounded-[10px] bg-accent-color px-5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+const secondaryButton =
+  "inline-flex h-10 items-center justify-center rounded-[9px] border border-input-stroke bg-white px-4 text-sm font-semibold text-accent-color transition hover:bg-slate-50";
+const fieldClass =
+  "mt-1 h-11 w-full rounded-[9px] border border-input-stroke bg-white px-3 text-sm text-[#1f2937] outline-none transition focus:border-accent-color focus:ring-2 focus:ring-blue-100";
 
 export default function CashFlow() {
   const [transactions, setTransactions] =
@@ -172,7 +195,7 @@ export default function CashFlow() {
 
   const cancelOperation = () => {
     setDeletingId(null);
-  }
+  };
 
   const removeTransaction = () => {
     if (!deletingId) return;
@@ -211,6 +234,16 @@ export default function CashFlow() {
     1,
     ...monthData.flatMap((month) => [month.income, month.expenses]),
   );
+
+  const mothDataIsNull = () => {
+    let isNull = false;
+
+    monthData.map((month) => {
+      isNull = month.income === 0 && month.expenses === 0;
+    });
+
+    return isNull;
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-[#1f2937]">
@@ -292,47 +325,75 @@ export default function CashFlow() {
                   </div>
                 </div>
               </div>
-              <div className="overflow-x-auto border-b border-slate-100 pb-2">
-                <div
-                  className="flex h-[190px] min-w-full gap-3"
-                  style={{
-                    width: chartMonths <= 12 ? "100%" : `${chartMonths * 76}px`,
-                    minWidth: `${chartMonths * 76}px`,
-                    justifyContent: chartMonths <= 12 ? "center" : "flex-start",
-                  }}
-                >
-                  {monthData.map((month) => (
-                    <div
-                      key={month.key}
-                      className="flex w-[64px] shrink-0 flex-col items-center justify-end gap-2"
-                    >
-                      <div className="flex h-[155px] w-full items-end justify-center gap-1.5">
-                        <div
-                          title={`Entradas: ${money(month.income)}`}
-                          className="w-[min(25px,40%)] rounded-t-md bg-emerald-500 transition-all"
-                          style={{
-                            height: `${Math.max(month.income > 0 ? 4 : 0, (month.income / chartMax) * 100)}%`,
-                          }}
-                        />
-                        <div
-                          title={`Saídas: ${money(month.expenses)}`}
-                          className="w-[min(25px,40%)] rounded-t-md bg-rose-400 transition-all"
-                          style={{
-                            height: `${Math.max(month.expenses > 0 ? 4 : 0, (month.expenses / chartMax) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-secondary-text text-[11px] capitalize">
-                        {month.label}/{month.year}
-                      </span>
+              {mothDataIsNull() ? (
+                <>
+                  <div className="px-5 py-14 text-center">
+                    <div className="text-secondary-text mx-auto mb-3 grid size-12 place-items-center rounded-full bg-slate-100 text-xl">
+                      R$
                     </div>
-                  ))}
-                </div>
-              </div>
-              {transactions.length === 0 && (
-                <p className="text-secondary-text mt-3 text-center text-xs">
-                  Cadastre movimentações para visualizar o comparativo mensal.
-                </p>
+                    <p className="font-semibold">
+                      Nenhuma movimentação encontrada
+                    </p>
+                    <p className="text-secondary-text mt-1 text-xs">
+                      Tente alterar os filtros ou cadastre uma nova
+                      movimentação.
+                    </p>
+                    <button
+                      onClick={openNew}
+                      className="text-accent-color mt-4 text-sm font-semibold"
+                    >
+                      Adicionar movimentação
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="overflow-x-auto border-b border-slate-100 pb-2">
+                    <div
+                      className="flex h-[190px] min-w-full gap-3"
+                      style={{
+                        width:
+                          chartMonths <= 12 ? "100%" : `${chartMonths * 76}px`,
+                        minWidth: `${chartMonths * 76}px`,
+                        justifyContent:
+                          chartMonths <= 12 ? "center" : "flex-start",
+                      }}
+                    >
+                      {monthData.map((month) => (
+                        <div
+                          key={month.key}
+                          className="flex w-[64px] shrink-0 flex-col items-center justify-end gap-2"
+                        >
+                          <div className="flex h-[155px] w-full items-end justify-center gap-1.5">
+                            <div
+                              title={`Entradas: ${money(month.income)}`}
+                              className="w-[min(25px,40%)] rounded-t-md bg-emerald-500 transition-all"
+                              style={{
+                                height: `${Math.max(month.income > 0 ? 4 : 0, (month.income / chartMax) * 100)}%`,
+                              }}
+                            />
+                            <div
+                              title={`Saídas: ${money(month.expenses)}`}
+                              className="w-[min(25px,40%)] rounded-t-md bg-rose-400 transition-all"
+                              style={{
+                                height: `${Math.max(month.expenses > 0 ? 4 : 0, (month.expenses / chartMax) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="text-secondary-text text-[11px] capitalize">
+                            {month.label}/{month.year}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {transactions.length === 0 && (
+                    <p className="text-secondary-text mt-3 text-center text-xs">
+                      Cadastre movimentações para visualizar o comparativo
+                      mensal.
+                    </p>
+                  )}
+                </>
               )}
             </section>
           )}
@@ -621,9 +682,24 @@ export default function CashFlow() {
   );
 }
 
-function SummaryCard({ title, value, detail }: { title: string; value: string; detail: string; }) {
-  return <article className="rounded-[15px] border border-input-stroke bg-white p-5 shadow-sm">
-    <div className="flex items-center justify-between"><p className="text-sm font-medium text-secondary-text">{title}</p></div>
-    <p className="mt-4 text-[26px] font-bold tracking-tight text-[#202938] max-sm:text-[22px]">{value}</p><p className="mt-1 text-xs text-secondary-text">{detail}</p>
-  </article>;
+function SummaryCard({
+  title,
+  value,
+  detail,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <article className="border-input-stroke rounded-[15px] border bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-secondary-text text-sm font-medium">{title}</p>
+      </div>
+      <p className="mt-4 text-[26px] font-bold tracking-tight text-[#202938] max-sm:text-[22px]">
+        {value}
+      </p>
+      <p className="text-secondary-text mt-1 text-xs">{detail}</p>
+    </article>
+  );
 }
