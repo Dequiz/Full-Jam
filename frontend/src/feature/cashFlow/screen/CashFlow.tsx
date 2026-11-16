@@ -5,6 +5,7 @@ import type { RouteContext } from "../../../routes/ProtectedRoute.tsx";
 import EditButton from "../../../core/EditButton.tsx";
 import DeleteButton from "../../../core/DeleteButton.tsx";
 import DeleteModal, { DeleteItemCard } from "../../../core/DeleteModal.tsx";
+import { toast } from "sonner";
 
 type TransactionType = "Entrada" | "Saída";
 type Transaction = {
@@ -191,6 +192,7 @@ export default function CashFlow() {
       ]);
     }
     closeForm();
+    toast.success("Registro salvo com sucesso!")
   };
 
   const cancelOperation = () => {
