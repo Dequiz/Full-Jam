@@ -17,11 +17,12 @@ type Transaction = {
   date: string;
 };
 type Draft = Omit<Transaction, "id">;
-type Period = "all" | "month" | "year";
+type Period = "month" | "6m" | "12m" | "18m" | "24m" | "year" | "all";
 
 const STORAGE_KEY = "kaysen-cashflow-transactions";
 const today = () => new Date().toISOString().slice(0, 10);
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+const monthKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 const money = (value: number | undefined) =>
   value != undefined
     ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -50,6 +51,30 @@ const emptyDraft: Draft = {
   date: today(),
 };
 
+const periodOptions: { value: Period; label: string }[] = [
+  { value: "month", label: "Este mês" },
+  { value: "6m", label: "Últimos 6 meses" },
+  { value: "12m", label: "Últimos 12 meses" },
+  { value: "18m", label: "Últimos 18 meses" },
+  { value: "24m", label: "Últimos 24 meses" },
+  { value: "year", label: "Este ano" },
+  { value: "all", label: "Todo o período" },
+];
+
+const rollingMonths: Partial<Record<Period, number>> = {
+  "6m": 6,
+  "12m": 12,
+  "18m": 18,
+  "24m": 24,
+};
+
+type ChartBucket = {
+  key: string;
+  label: string;
+  income: number;
+  expenses: number;
+};
+
 function readTransactions(): Transaction[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -72,7 +97,6 @@ export default function CashFlow() {
   const [transactions, setTransactions] =
     useState<Transaction[]>(readTransactions);
   const [period, setPeriod] = useState<Period>("month");
-  const [chartMonths, setChartMonths] = useState<6 | 12 | 18 | 24>(6);
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -93,31 +117,66 @@ export default function CashFlow() {
     }
   };
 
+  const range = useMemo(() => {
+    const now = new Date();
+    const current = monthKey(now);
+
+    if (period === "month") return { start: current, end: current };
+
+    if (period === "year") {
+      return {
+        start: `${now.getFullYear()}-01`,
+        end: `${now.getFullYear()}-12`,
+      };
+    }
+
+    if (period === "all") {
+      const keys = transactions.map((item) => item.date.slice(0, 7)).sort();
+      const first = keys[0];
+      const last = keys[keys.length - 1];
+      return {
+        start: first && first < current ? first : current,
+        end: last && last > current ? last : current,
+      };
+    }
+
+    const months = rollingMonths[period] ?? 6;
+    return {
+      start: monthKey(
+        new Date(now.getFullYear(), now.getMonth() - (months - 1), 1),
+      ),
+      end: current,
+    };
+  }, [period, transactions]);
+
+  const periodTransactions = useMemo(
+    () =>
+      transactions.filter((item) => {
+        const key = item.date.slice(0, 7);
+        return key >= range.start && key <= range.end;
+      }),
+    [transactions, range],
+  );
+
   const filtered = useMemo(
     () =>
-      transactions
+      periodTransactions
         .filter((item) => {
-          const date = new Date(`${item.date}T12:00:00`);
-          const now = new Date();
-          const inPeriod =
-            period === "all" ||
-            (period === "month" && item.date.slice(0, 7) === currentMonth()) ||
-            (period === "year" && date.getFullYear() === now.getFullYear());
           const inType = typeFilter === "Todos" || item.type === typeFilter;
           const inSearch = `${item.description} ${item.category}`
             .toLocaleLowerCase("pt-BR")
             .includes(search.toLocaleLowerCase("pt-BR"));
-          return inPeriod && inType && inSearch;
+          return inType && inSearch;
         })
         .sort(
           (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
         ),
-    [transactions, period, typeFilter, search],
+    [periodTransactions, typeFilter, search],
   );
 
   const totals = useMemo(
     () =>
-      filtered.reduce(
+      periodTransactions.reduce(
         (acc, item) => {
           if (item.type === "Entrada") acc.income += item.amount;
           else acc.expenses += item.amount;
@@ -125,7 +184,7 @@ export default function CashFlow() {
         },
         { income: 0, expenses: 0 },
       ),
-    [filtered],
+    [periodTransactions],
   );
   const balance = totals.income - totals.expenses;
 
@@ -192,7 +251,7 @@ export default function CashFlow() {
       ]);
     }
     closeForm();
-    toast.success("Registro salvo com sucesso!")
+    toast.success("Registro salvo com sucesso!");
   };
 
   const cancelOperation = () => {
@@ -205,47 +264,66 @@ export default function CashFlow() {
     setDeletingId(null);
   };
 
-  const monthData = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: chartMonths }, (_, index) => {
-      const date = new Date(
-        now.getFullYear(),
-        now.getMonth() - (chartMonths - 1 - index),
-        1,
-      );
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const entries = transactions.filter(
-        (item) => item.date.slice(0, 7) === key,
-      );
-      return {
-        key,
-        label: date
+  const isDaily = range.start === range.end;
+  const bucketWidth = isDaily ? 36 : 64;
+
+  const chartData = useMemo<ChartBucket[]>(() => {
+    const buckets: ChartBucket[] = [];
+
+    if (isDaily) {
+      const [year, month] = range.start.split("-").map(Number);
+      const dayInMonth = new Date(year, month, 0).getDate();
+      for (let day = 1; day <= dayInMonth; day++) {
+        buckets.push({
+          key: `${range.start}-${String(day).padStart(2, "0")}`,
+          label: String(day),
+          income: 0,
+          expenses: 0,
+        });
+      }
+    } else {
+      let [year, month] = range.start.split("-").map(Number);
+      const [endYear, endMonth] = range.end.split("-").map(Number);
+      while (year < endYear || (year === endYear && month <= endMonth)) {
+        const monthLabel = new Date(year, month - 1, 1)
           .toLocaleDateString("pt-BR", { month: "short" })
-          .replace(".", ""),
-        year: String(date.getFullYear()).slice(-2),
-        income: entries
-          .filter((item) => item.type === "Entrada")
-          .reduce((sum, item) => sum + item.amount, 0),
-        expenses: entries
-          .filter((item) => item.type === "Saída")
-          .reduce((sum, item) => sum + item.amount, 0),
-      };
-    });
-  }, [transactions, chartMonths]);
+          .replace(".", "");
+        buckets.push({
+          key: `${year}-${String(month).padStart(2, "0")}`,
+          label: `${monthLabel}/${String(year).slice(-2)}`,
+          income: 0,
+          expenses: 0,
+        });
+        month++;
+        if (month > 12) {
+          month = 1;
+          year++;
+        }
+      }
+    }
+
+    for (const bucket of buckets) {
+      for (const item of periodTransactions) {
+        if (!item.date.startsWith(bucket.key)) continue;
+        if (item.type === "Entrada") bucket.income += item.amount;
+        else bucket.expenses += item.amount;
+      }
+    }
+
+    return buckets;
+  }, [range, isDaily, periodTransactions]);
+
   const chartMax = Math.max(
     1,
-    ...monthData.flatMap((month) => [month.income, month.expenses]),
+    ...chartData.flatMap((bucket) => [bucket.income, bucket.expenses]),
   );
 
-  const mothDataIsNull = () => {
-    let isNull = false;
+  const chartIsEmpty = chartData.every(
+    (bucket) => bucket.income === 0 && bucket.expenses === 0,
+  );
 
-    monthData.map((month) => {
-      isNull = month.income === 0 && month.expenses === 0;
-    });
-
-    return isNull;
-  };
+  const periodLabel =
+    periodOptions.find((option) => option.value === period)?.label ?? "";
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-[#1f2937]">
@@ -263,9 +341,26 @@ export default function CashFlow() {
                 Acompanhe as entradas, saídas e o resultado financeiro.
               </p>
             </div>
-            <button onClick={openNew} className={primaryButton}>
-              <span className="mr-2 text-lg">＋</span> Nova movimentação
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="text-secondary-text flex items-center gap-2 text-xs">
+                Período
+                <select
+                  aria-label="Filtrar período da página"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as Period)}
+                  className="border-input-stroke focus:border-accent-color h-11 rounded-[10px] border bg-white px-3 text-sm text-[#1f2937] outline-none"
+                >
+                  {periodOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button onClick={openNew} className={primaryButton}>
+                <span className="mr-2 text-lg">＋</span> Nova movimentação
+              </button>
+            </div>
           </header>
 
           {isOwner && (
@@ -294,28 +389,11 @@ export default function CashFlow() {
                 <div>
                   <h2 className="text-lg font-bold">Movimentação financeira</h2>
                   <p className="text-secondary-text mt-1 text-xs">
-                    Comparativo dos últimos {chartMonths} meses
+                    {isDaily ? "Comparativo diário" : "Comparativo mensal"}.{" "}
+                    {periodLabel.toLocaleLowerCase("pt-BR")}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
-                  <label className="text-secondary-text flex items-center gap-2 text-xs">
-                    Período
-                    <select
-                      aria-label="Quantidade de meses do gráfico"
-                      value={chartMonths}
-                      onChange={(e) =>
-                        setChartMonths(
-                          Number(e.target.value) as 6 | 12 | 18 | 24,
-                        )
-                      }
-                      className="border-input-stroke focus:border-accent-color h-9 rounded-lg border bg-white px-2 text-xs text-[#1f2937] outline-none"
-                    >
-                      <option value={6}>6 meses</option>
-                      <option value={12}>12 meses</option>
-                      <option value={18}>18 meses</option>
-                      <option value={24}>24 meses</option>
-                    </select>
-                  </label>
                   <div className="text-secondary-text flex flex-wrap items-center gap-4 text-xs">
                     <span className="flex items-center gap-2">
                       <i className="size-2.5 rounded-full bg-emerald-500" />{" "}
@@ -327,7 +405,7 @@ export default function CashFlow() {
                   </div>
                 </div>
               </div>
-              {mothDataIsNull() ? (
+              {chartIsEmpty ? (
                 <>
                   <div className="px-5 py-14 text-center">
                     <div className="text-secondary-text mx-auto mb-3 grid size-12 place-items-center rounded-full bg-slate-100 text-xl">
@@ -354,36 +432,38 @@ export default function CashFlow() {
                     <div
                       className="flex h-[190px] min-w-full gap-3"
                       style={{
-                        width:
-                          chartMonths <= 12 ? "100%" : `${chartMonths * 76}px`,
-                        minWidth: `${chartMonths * 76}px`,
-                        justifyContent:
-                          chartMonths <= 12 ? "center" : "flex-start",
+                        minWidth: `${chartData.length * (bucketWidth + 12)}px`,
+                        justifyContent: "center",
                       }}
                     >
-                      {monthData.map((month) => (
+                      {chartData.map((bucket) => (
                         <div
-                          key={month.key}
+                          key={bucket.key}
                           className="flex w-[64px] shrink-0 flex-col items-center justify-end gap-2"
+                          style={{ width: `${bucketWidth}px` }}
                         >
                           <div className="flex h-[155px] w-full items-end justify-center gap-1.5">
-                            <div
-                              title={`Entradas: ${money(month.income)}`}
-                              className="w-[min(25px,40%)] rounded-t-md bg-emerald-500 transition-all"
-                              style={{
-                                height: `${Math.max(month.income > 0 ? 4 : 0, (month.income / chartMax) * 100)}%`,
-                              }}
-                            />
-                            <div
-                              title={`Saídas: ${money(month.expenses)}`}
-                              className="w-[min(25px,40%)] rounded-t-md bg-rose-400 transition-all"
-                              style={{
-                                height: `${Math.max(month.expenses > 0 ? 4 : 0, (month.expenses / chartMax) * 100)}%`,
-                              }}
-                            />
+                            {bucket.income > 0 && (
+                              <div
+                                title={`Entradas: ${money(bucket.income)}`}
+                                className="w-[min(25px,40%)] rounded-t-md bg-emerald-500 transition-all"
+                                style={{
+                                  height: `${Math.max(4, (bucket.income / chartMax) * 100)}%`,
+                                }}
+                              />
+                            )}
+                            {bucket.expenses > 0 && (
+                              <div
+                                title={`Saídas: ${money(bucket.expenses)}`}
+                                className="w-[min(25px,40%)] rounded-t-md bg-rose-400 transition-all"
+                                style={{
+                                  height: `${Math.max(4, (bucket.expenses / chartMax) * 100)}%`,
+                                }}
+                              />
+                            )}
                           </div>
                           <span className="text-secondary-text text-[11px] capitalize">
-                            {month.label}/{month.year}
+                            {bucket.label}
                           </span>
                         </div>
                       ))}
@@ -414,16 +494,6 @@ export default function CashFlow() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <select
-                  aria-label="Filtrar período"
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value as Period)}
-                  className="border-input-stroke focus:border-accent-color h-10 rounded-lg border bg-white px-3 text-xs outline-none"
-                >
-                  <option value="month">Este mês</option>
-                  <option value="year">Este ano</option>
-                  <option value="all">Todo o período</option>
-                </select>
                 <select
                   aria-label="Filtrar tipo"
                   value={typeFilter}
@@ -693,12 +763,18 @@ function SummaryCard({
   value: string;
   detail: string;
 }) {
+  const rawValue = () => {
+    const numberCleaned = value.replace(/[^-\d,]/g, "").replace(",", ".")
+    console.log(numberCleaned)
+    return Number(numberCleaned)
+  }
+
   return (
     <article className="border-input-stroke rounded-[15px] border bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-secondary-text text-sm font-medium">{title}</p>
       </div>
-      <p className="mt-4 text-[26px] font-bold tracking-tight text-[#202938] max-sm:text-[22px]">
+      <p className={`mt-4 text-[26px] font-bold tracking-tight ${rawValue() >= 0 ? "text-[#202938]" : "text-destructive-color"} max-sm:text-[22px]`}>
         {value}
       </p>
       <p className="text-secondary-text mt-1 text-xs">{detail}</p>
