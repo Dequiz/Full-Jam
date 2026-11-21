@@ -24,4 +24,4 @@ frontend/.idea
 *.sw?
 
 # Environment Files
-.env
+frontend/.env

@@ -1,29 +1,48 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Dashboard from "./feature/dashboard/screen/Dashboard.tsx";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Statistics from "./feature/statistics/screen/Statistics.tsx";
 import Stock from "./feature/stock/screen/Stock.tsx";
 import Order from "./feature/order/screen/Order.tsx";
 import CashFlow from "./feature/cashFlow/screen/CashFlow.tsx";
 import TermsOfUse from "./feature/termsOfUse/TermsOfUse.tsx";
 import PrivacyPolicy from "./feature/privacyPolicy/PrivacyPolicy.tsx";
 import Login from "./feature/login/Login.tsx";
-
-const router = createBrowserRouter(
-  [
-    { path: "/relatorio", element: <Dashboard /> },
-    { path: "/", element: <Login /> },
-    { path: "/estoque", element: <Stock /> },
-    { path: "/pedidos", element: <Order /> },
-    { path: "/fluxo-de-caixa", element: <CashFlow /> },
-    { path: "/termos-de-uso", element: <TermsOfUse /> },
-    { path: "/politica-de-privacidade", element: <PrivacyPolicy /> },
-  ]
-);
+import { Toaster } from "sonner";
+import ProtectedRoute from "./routes/ProtectedRoute.tsx";
+import Users from "./feature/users/Users.tsx";
+import UserForm from "./feature/users/components/UserForm.tsx";
+import RoleRoute from "./routes/RoleRoute.tsx";
+import PasswordRecovery from "./feature/passwordRecovery/PasswordRecovery.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <Toaster position="top-center" richColors />
+      <Routes>
+        <Route path={"/"} element={<Login />} />
+        <Route path={"/recuperar-senha"} element={<PasswordRecovery/>} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route
+            element={<RoleRoute allowed={["PROPRIETARIO", "FUNCIONARIO"]} />}
+          >
+            <Route path={"/estoque"} element={<Stock />} />
+            <Route path={"/pedidos"} element={<Order />} />
+            <Route path={"/fluxo-de-caixa"} element={<CashFlow />} />
+          </Route>
+          <Route element={<RoleRoute allowed={["PROPRIETARIO"]} />}>
+            <Route path={"/relatorio"} element={<Statistics />} />
+            <Route path={"/usuarios"} element={<Users />} />
+            <Route path={"/usuarios/adicionar"} element={<UserForm />} />
+            <Route path={"/usuarios/:id/editar"} element={<UserForm />} />
+          </Route>
+        </Route>
+
+        <Route path={"/termos-de-uso"} element={<TermsOfUse />} />
+        <Route path={"/politica-de-privacidade"} element={<PrivacyPolicy />} />
+      </Routes>
+    </BrowserRouter>
   </StrictMode>,
 );
