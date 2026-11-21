@@ -34,6 +34,12 @@ const money = (value: number | undefined) =>
   value != undefined
     ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
     : "";
+const chartCurrency = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 const dateLabel = (value: string | undefined) =>
   value != undefined
     ? new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR")
@@ -237,7 +243,6 @@ export default function CashFlow() {
   };
 
   const isDaily = range.start === range.end;
-  const bucketWidth = isDaily ? 36 : 64;
 
   const chartData = useMemo<ChartBucket[]>(() => {
     const buckets: ChartBucket[] = buildBuckets(range).map((bucket) => ({
@@ -383,38 +388,36 @@ export default function CashFlow() {
                 </div>
               ) : (
                 <div className="overflow-x-auto border-b border-slate-100 pb-2">
-                  <div
-                    className="flex h-[190px] min-w-full gap-3"
-                    style={{
-                      minWidth: `${chartData.length * (bucketWidth + 12)}px`,
-                      justifyContent: "center",
-                    }}
-                  >
+                  <div className="flex w-max min-w-full justify-center gap-3 px-2 pt-6">
                     {chartData.map((bucket) => (
                       <div
                         key={bucket.key}
-                        className="flex w-[64px] shrink-0 flex-col items-center justify-end gap-2"
-                        style={{ width: `${bucketWidth}px` }}
+                        className="flex min-w-12 shrink-0 flex-col items-center gap-2"
                       >
-                        <div className="flex h-[155px] w-full items-end justify-center gap-1.5">
-                          {bucket.income > 0 && (
-                            <div
-                              title={`Entradas: ${money(bucket.income)}`}
-                              className="w-[min(25px,40%)] rounded-t-md bg-emerald-500 transition-all"
-                              style={{
-                                height: `${Math.max(4, (bucket.income / chartMax) * 100)}%`,
-                              }}
-                            />
-                          )}
-                          {bucket.expenses > 0 && (
-                            <div
-                              title={`Saídas: ${money(bucket.expenses)}`}
-                              className="w-[min(25px,40%)] rounded-t-md bg-rose-400 transition-all"
-                              style={{
-                                height: `${Math.max(4, (bucket.expenses / chartMax) * 100)}%`,
-                              }}
-                            />
-                          )}
+                        <div className="flex h-[155px] items-end justify-center gap-2">
+                          {(["income", "expenses"] as const).map((series) => {
+                            const value = bucket[series];
+                            if (value <= 0) return null;
+
+                            const isIncome = series === "income";
+                            return (
+                              <div
+                                key={series}
+                                title={`${isIncome ? "Entradas" : "Saídas"}: ${money(value)}`}
+                                className="flex flex-col items-center justify-end gap-1"
+                                style={{
+                                  height: `${Math.max(4, (value / chartMax) * 100)}%`,
+                                }}
+                              >
+                                <span className="shrink-0 text-[11px] font-medium whitespace-nowrap text-[#111827]">
+                                  {chartCurrency.format(value)}
+                                </span>
+                                <div
+                                  className={`h-full w-[25px] shrink-0 rounded-t-md transition-all ${isIncome ? "bg-emerald-500" : "bg-rose-400"}`}
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                         <span className="text-secondary-text text-[11px] capitalize">
                           {bucket.label}
