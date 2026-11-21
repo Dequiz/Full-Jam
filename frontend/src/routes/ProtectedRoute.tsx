@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase/supabaseclient.ts";
 import { Navigate, Outlet } from "react-router-dom";
-import { PulseLoader } from "react-spinners";
 import { toast } from "sonner";
 import { authService } from "../service/authService.ts";
+import PageLoading from "../core/PageLoading.tsx";
 
 export type Role = "PROPRIETARIO" | "FUNCIONARIO"
 export interface RouteContext {
@@ -79,7 +79,16 @@ const ProtectedRoute = () => {
   const role = profileMatches ? profile.role : null
   const roleLoading = Boolean(userId) && !profileMatches
 
-  if (loading || roleLoading) return <PulseLoader color="#000000" size={8} margin={1} />;
+  if (loading || roleLoading) {
+    return (
+      <PageLoading
+        message={
+          loading ? "Verificando sua sessão..." : "Carregando seu perfil..."
+        }
+      />
+    );
+  }
+
   if (!session || !role) return <Navigate to={"/"} replace/>
 
   return <Outlet context={{role} satisfies RouteContext}/>
