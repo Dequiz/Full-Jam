@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Dashboard from "./feature/dashboard/screen/Dashboard.tsx";
+import Statistics from "./feature/statistics/screen/Statistics.tsx";
 import Stock from "./feature/stock/screen/Stock.tsx";
 import Order from "./feature/order/screen/Order.tsx";
 import CashFlow from "./feature/cashFlow/screen/CashFlow.tsx";
@@ -33,7 +33,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path={"/fluxo-de-caixa"} element={<CashFlow />} />
           </Route>
           <Route element={<RoleRoute allowed={["PROPRIETARIO"]} />}>
-            <Route path={"/relatorio"} element={<Dashboard />} />
+            <Route path={"/relatorio"} element={<Statistics />} />
             <Route path={"/usuarios"} element={<Users />} />
             <Route path={"/usuarios/adicionar"} element={<UserForm />} />
             <Route path={"/usuarios/:id/editar"} element={<UserForm />} />

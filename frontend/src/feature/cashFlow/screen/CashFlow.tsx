@@ -21,12 +21,15 @@ import {
   type Transaction,
   type TransactionType,
 } from "../../../service/cashFlowService.ts";
-
-type Period = "month" | "6m" | "12m" | "18m" | "24m" | "year" | "all";
+import {
+  buildBuckets,
+  getPeriodRange,
+  isInRange,
+  periodOptions,
+  type Period,
+} from "../../../core/Period.ts";
 
 const today = () => new Date().toISOString().slice(0, 10);
-const monthKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 const money = (value: number | undefined) =>
   value != undefined
     ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -44,23 +47,6 @@ const emptyDraft: SaveTransactionPayload = {
   type: "Entrada",
   amount: 0,
   date: today(),
-};
-
-const periodOptions: { value: Period; label: string }[] = [
-  { value: "month", label: "Este mês" },
-  { value: "6m", label: "Últimos 6 meses" },
-  { value: "12m", label: "Últimos 12 meses" },
-  { value: "18m", label: "Últimos 18 meses" },
-  { value: "24m", label: "Últimos 24 meses" },
-  { value: "year", label: "Este ano" },
-  { value: "all", label: "Todo o período" },
-];
-
-const rollingMonths: Partial<Record<Period, number>> = {
-  "6m": 6,
-  "12m": 12,
-  "18m": 18,
-  "24m": 24,
 };
 
 type ChartBucket = {
@@ -119,44 +105,17 @@ export default function CashFlow() {
     void fetchTransactions();
   };
 
-  const range = useMemo(() => {
-    const now = new Date();
-    const current = monthKey(now);
-
-    if (period === "month") return { start: current, end: current };
-
-    if (period === "year") {
-      return {
-        start: `${now.getFullYear()}-01`,
-        end: `${now.getFullYear()}-12`,
-      };
-    }
-
-    if (period === "all") {
-      const keys = transactions.map((item) => item.date.slice(0, 7)).sort();
-      const first = keys[0];
-      const last = keys[keys.length - 1];
-      return {
-        start: first && first < current ? first : current,
-        end: last && last > current ? last : current,
-      };
-    }
-
-    const months = rollingMonths[period] ?? 6;
-    return {
-      start: monthKey(
-        new Date(now.getFullYear(), now.getMonth() - (months - 1), 1),
+  const range = useMemo(
+    () =>
+      getPeriodRange(
+        period,
+        transactions.map((item) => item.date),
       ),
-      end: current,
-    };
-  }, [period, transactions]);
+    [period, transactions],
+  );
 
   const periodTransactions = useMemo(
-    () =>
-      transactions.filter((item) => {
-        const key = item.date.slice(0, 7);
-        return key >= range.start && key <= range.end;
-      }),
+    () => transactions.filter((item) => isInRange(item.date, range)),
     [transactions, range],
   );
 
@@ -281,39 +240,11 @@ export default function CashFlow() {
   const bucketWidth = isDaily ? 36 : 64;
 
   const chartData = useMemo<ChartBucket[]>(() => {
-    const buckets: ChartBucket[] = [];
-
-    if (isDaily) {
-      const [year, month] = range.start.split("-").map(Number);
-      const dayInMonth = new Date(year, month, 0).getDate();
-      for (let day = 1; day <= dayInMonth; day++) {
-        buckets.push({
-          key: `${range.start}-${String(day).padStart(2, "0")}`,
-          label: String(day),
-          income: 0,
-          expenses: 0,
-        });
-      }
-    } else {
-      let [year, month] = range.start.split("-").map(Number);
-      const [endYear, endMonth] = range.end.split("-").map(Number);
-      while (year < endYear || (year === endYear && month <= endMonth)) {
-        const monthLabel = new Date(year, month - 1, 1)
-          .toLocaleDateString("pt-BR", { month: "short" })
-          .replace(".", "");
-        buckets.push({
-          key: `${year}-${String(month).padStart(2, "0")}`,
-          label: `${monthLabel}/${String(year).slice(-2)}`,
-          income: 0,
-          expenses: 0,
-        });
-        month++;
-        if (month > 12) {
-          month = 1;
-          year++;
-        }
-      }
-    }
+    const buckets: ChartBucket[] = buildBuckets(range).map((bucket) => ({
+      ...bucket,
+      income: 0,
+      expenses: 0,
+    }));
 
     for (const bucket of buckets) {
       for (const item of periodTransactions) {
@@ -324,7 +255,7 @@ export default function CashFlow() {
     }
 
     return buckets;
-  }, [range, isDaily, periodTransactions]);
+  }, [range, periodTransactions]);
 
   const chartMax = Math.max(
     1,
