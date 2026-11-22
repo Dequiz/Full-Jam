@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        "accent-color": "#395CEB",
+        "accent-color": "#253FA5",
         "active-status-bg": "#E8F5E9",
         "active-status-text": "#005A05",
         "pending-status-bg": "#FFF4E5",

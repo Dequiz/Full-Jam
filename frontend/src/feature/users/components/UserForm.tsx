@@ -133,6 +133,7 @@ const UserForm = () => {
               <div className="md:col-span-2">
                 <label htmlFor="nome" className={label}>
                   Nome do usuário
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <input
                   id="nome"
@@ -149,6 +150,7 @@ const UserForm = () => {
               <div>
                 <label htmlFor="email" className={label}>
                   Email
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <input
                   id="email"
@@ -167,6 +169,7 @@ const UserForm = () => {
                 <div>
                   <label htmlFor="senha" className={label}>
                     Senha
+                    <span className={"align-top text-xs text-red-800"}> *</span>
                   </label>
                   <input
                     id="senha"
@@ -185,8 +188,10 @@ const UserForm = () => {
               <div>
                 <label htmlFor="role" className={label}>
                   Cargo
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <select
+                  required
                   id="role"
                   name="ROLE"
                   value={form.ROLE}
@@ -201,8 +206,10 @@ const UserForm = () => {
               <div>
                 <label htmlFor="ativo" className={label}>
                   Status
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <select
+                  required
                   id="ativo"
                   name="ATIVO"
                   value={String(form.ATIVO)}

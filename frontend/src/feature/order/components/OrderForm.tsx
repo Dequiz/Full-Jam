@@ -339,7 +339,9 @@ const OrderForm = ({
             {customerMode === "existing" ? (
               <label className="block text-[13px] font-semibold text-[#1f2937]">
                 Cliente
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <select
+                  required
                   value={selectedCustomerId}
                   disabled={isSubmitting}
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
@@ -356,6 +358,7 @@ const OrderForm = ({
             ) : (
               <label className="block text-[13px] font-semibold text-[#1f2937]">
                 Cliente (Nome completo)
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <input
                   type="text"
                   required
@@ -370,6 +373,7 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Data do pedido
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <input
                 type="date"
                 required
@@ -382,7 +386,9 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Estado do pedido
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={status}
                 disabled={isSubmitting}
                 onChange={(e) => setStatus(e.target.value as OrderStatusUI)}
@@ -406,6 +412,7 @@ const OrderForm = ({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   CPF / CNPJ
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="text"
                     required
@@ -422,6 +429,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   E-mail do cliente
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="email"
                     required
@@ -435,6 +443,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   Telefone
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="tel"
                     required
@@ -448,6 +457,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   Data de cadastro
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="date"
                     required
@@ -482,7 +492,9 @@ const OrderForm = ({
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[200px_200px_1fr]">
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Forma de pagamento
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={paymentMethod}
                 disabled={isSubmitting}
                 onChange={(e) =>
@@ -498,7 +510,9 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Tipo de recebimento
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={deliveryType}
                 disabled={isSubmitting}
                 onChange={(e) =>
@@ -543,6 +557,7 @@ const OrderForm = ({
             <label className="border-input-stroke flex h-[48px] min-w-[260px] flex-1 items-center gap-3 rounded-[10px] border bg-white px-4">
               <span className="text-secondary-text text-lg">⌕</span>
               <select
+                aria-label="Produto a adicionar"
                 value={selectedProductId}
                 disabled={isSubmitting}
                 onChange={(e) => setSelectedProductId(e.target.value)}
@@ -576,6 +591,7 @@ const OrderForm = ({
 
           <div className="border-input-stroke overflow-x-auto rounded-[15px] border bg-white">
             <table className="w-full min-w-[680px] border-collapse text-left text-[14px]">
+              <caption className="sr-only">Itens do pedido</caption>
               <thead className="bg-accent-color text-[13px] font-semibold text-white">
                 <tr>
                   <th className="px-6 py-4">Produto</th>
@@ -596,7 +612,7 @@ const OrderForm = ({
                         {item.productImage ? (
                           <img
                             src={item.productImage}
-                            alt=""
+                            alt={`Foto de ${item.productName}`}
                             className="h-12 w-16 rounded-[6px] object-cover"
                           />
                         ) : (

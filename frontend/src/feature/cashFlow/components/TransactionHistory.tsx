@@ -96,6 +96,9 @@ export default function TransactionHistory({
         ) : (
           <>
             <table className="w-full min-w-[700px] border-collapse text-left text-sm">
+              <caption className="sr-only">
+                Histórico de movimentações financeiras
+              </caption>
               <thead className="bg-accent-color text-xs font-semibold text-white">
                 <tr>
                   {tableHeadings.map((heading) => (
@@ -125,8 +128,8 @@ export default function TransactionHistory({
                       <span
                         className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
                           item.type === "Entrada"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-rose-50 text-rose-700"
+                            ? "bg-emerald-50 text-emerald-900"
+                            : "bg-rose-50 text-rose-900"
                         }`}
                       >
                         {item.type}
@@ -135,8 +138,8 @@ export default function TransactionHistory({
                     <td
                       className={`px-5 py-4 font-semibold tabular-nums ${
                         item.type === "Entrada"
-                          ? "text-emerald-700"
-                          : "text-rose-600"
+                          ? "text-emerald-900"
+                          : "text-rose-900"
                       }`}
                     >
                       {item.type === "Entrada" ? "+ " : "− "}

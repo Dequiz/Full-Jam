@@ -53,7 +53,7 @@ const Login = () => {
 
           <div className={"flex w-full max-w-md flex-col gap-2.5 text-start"}>
             <label className={"text-base font-bold text-black"}>
-              E-mail<span className={"align-top text-xs text-red-500"}> *</span>
+              E-mail<span className={"align-top text-xs text-red-800"}> *</span>
             </label>
             <input
               className={"h-10 w-full rounded-3xl border pl-2"}
@@ -63,10 +63,12 @@ const Login = () => {
             />
           </div>
 
-          <div className={"mb-3 flex w-full max-w-md flex-col gap-2.5 text-start"}>
+          <div
+            className={"mb-3 flex w-full max-w-md flex-col gap-2.5 text-start"}
+          >
             <label className={"text-base font-bold text-black"}>
               Senha
-              <span className={"align-top text-xs text-red-500"}> *</span>
+              <span className={"align-top text-xs text-red-800"}> *</span>
             </label>
             <div className={"relative w-full"}>
               <input
@@ -80,7 +82,7 @@ const Login = () => {
                 type={"button"}
                 onClick={() => setShowPassword((prev) => !prev)}
                 className={
-                  "absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-black"
+                  "absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-700 hover:text-black"
                 }
               >
                 {showPassword ? "Ocultar" : "Mostrar"}
@@ -92,14 +94,14 @@ const Login = () => {
             Leia os nossos{" "}
             <Link
               to="/termos-de-uso"
-              className={"text-sm text-blue-500 underline"}
+              className={"text-sm text-blue-800 underline"}
             >
               Termos de Uso
             </Link>{" "}
             e
             <Link
               to="/politica-de-privacidade"
-              className={"text-blue-500 underline"}
+              className={"text-blue-800 underline"}
             >
               {" "}
               Políticas de Privacidade

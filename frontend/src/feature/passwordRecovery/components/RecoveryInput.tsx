@@ -56,7 +56,7 @@ const RecoveryInput = ({ label, type, placeholder, onChange, value, }: Config) =
             type={"button"}
             onClick={() => setShowPassword((prev) => !prev)}
             className={
-              "absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-black"
+              "absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-700 hover:text-black"
             }
           >
             {showPassword ? "Ocultar" : "Mostrar"}

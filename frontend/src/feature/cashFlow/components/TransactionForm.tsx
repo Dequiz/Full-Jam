@@ -68,6 +68,7 @@ export default function TransactionForm({
         <div className="grid gap-4 p-6 sm:grid-cols-2">
           <label className="text-secondary-text text-xs font-semibold sm:col-span-2">
             Descrição
+            <span className={"align-top text-xs text-red-800"}> *</span>
             <input
               autoFocus
               required
@@ -83,7 +84,9 @@ export default function TransactionForm({
 
           <label className="text-secondary-text text-xs font-semibold">
             Tipo
+            <span className={"align-top text-xs text-red-800"}> *</span>
             <select
+              required
               value={draft.type}
               onChange={(e) => {
                 const type = e.target.value as TransactionType;
@@ -102,7 +105,9 @@ export default function TransactionForm({
 
           <label className="text-secondary-text text-xs font-semibold">
             Categoria
+            <span className={"align-top text-xs text-red-800"}> *</span>
             <select
+              required
               value={draft.category}
               onChange={(e) => onChange({ ...draft, category: e.target.value })}
               className={fieldClass}
@@ -115,6 +120,7 @@ export default function TransactionForm({
 
           <label className="text-secondary-text text-xs font-semibold">
             Valor (R$)
+            <span className={"align-top text-xs text-red-800"}> *</span>
             <input
               required
               type="number"
@@ -131,6 +137,7 @@ export default function TransactionForm({
 
           <label className="text-secondary-text text-xs font-semibold">
             Data
+            <span className={"align-top text-xs text-red-800"}> *</span>
             <input
               required
               type="date"

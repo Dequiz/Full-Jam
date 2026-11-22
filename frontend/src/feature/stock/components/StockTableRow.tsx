@@ -20,7 +20,7 @@ const StockTableRow = ({ product, onEdit, onDelete }: StockTableRowProps) => {
           {product.image ? (
             <img
               src={product.image}
-              alt=""
+              alt={`Foto de ${product.name}`}
               className="h-10 w-[60px] rounded-[6px] object-cover"
             />
           ) : (
@@ -47,8 +47,8 @@ const StockTableRow = ({ product, onEdit, onDelete }: StockTableRowProps) => {
         <div className="flex gap-3">
           <EditButton
             objectToEdit={{
-              id: product.id
-          }}
+              id: product.id,
+            }}
             onEdit={() => onEdit(product.id)}
           />
           <DeleteButton

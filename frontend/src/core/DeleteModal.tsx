@@ -112,7 +112,11 @@ const DeleteItemCard = ({
       <img
         src={image}
         className="h-17 w-28 rounded-md object-cover"
-        alt=""
+        alt={
+          typeof title === "string"
+            ? `Foto de ${title}`
+            : "Foto do produto selecionado"
+        }
       />
     )}
     <div className="flex min-w-0 flex-1 flex-col gap-1">

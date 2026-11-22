@@ -60,6 +60,7 @@ const OrderTable = ({
 
       <div className="overflow-x-auto rounded-t-[15px] border-b border-[#395CEB] bg-white">
         <table className="w-full min-w-[850px] border-collapse text-[16px]">
+          <caption className="sr-only">Pedidos registrados</caption>
           <thead className="bg-accent-color text-[15px] font-semibold text-white">
             <tr>
               {TABLE_HEADERS.map(({ label, sortField, align }) => {

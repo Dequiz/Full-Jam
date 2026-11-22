@@ -43,6 +43,7 @@ const StockTable = ({
   return (
     <div className="border-input-stroke overflow-x-auto rounded-[15px] border bg-white">
       <table className="w-full min-w-[850px] border-collapse text-left text-[16px]">
+        <caption className="sr-only">Produtos em estoque</caption>
         <thead className="bg-accent-color text-[15px] font-semibold text-white">
           <tr>
             {TABLE_HEADERS.map(({ label, sortField }) => {
