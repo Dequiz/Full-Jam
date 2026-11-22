@@ -5,6 +5,7 @@ import type {
   Product,
   ProductPayload,
 } from "../../../service/productService.ts";
+import DeleteModal from "../../../core/DeleteModal.tsx";
 
 const buttonClass =
   "flex h-[52px] items-center justify-center rounded-[10px] px-6 text-[15px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
@@ -63,10 +64,12 @@ const ProductForm = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageName, setImageName] = useState("");
   const [imageError, setImageError] = useState("");
+  const [pendingDeactivation, setPendingDeactivation] =
+    useState<ProductPayload | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || pendingDeactivation) return;
 
     if (imageError) {
       toast.error(imageError);
@@ -78,19 +81,28 @@ const ProductForm = ({
       return;
     }
 
-    const parsedPrice = Number(price);
-    const parsedQuantity = Number(quantity);
-
-    await save({
+    const payload: ProductPayload = {
       name: name.trim(),
       description: description.trim(),
-      price: parsedPrice,
-      quantity: parsedQuantity,
+      price: Number(price),
+      quantity: Number(quantity),
       code: code.trim(),
       active: active === "Ativo",
       image: image || undefined,
       imageFile,
-    });
+    };
+
+    const willDeactivate =
+      mode === "edit" &&
+      initial?.active &&
+      (!payload.active || payload.quantity === 0);
+
+    if (willDeactivate) {
+      setPendingDeactivation(payload);
+      return;
+    }
+
+    await save(payload);
   };
 
   return (
@@ -369,6 +381,30 @@ const ProductForm = ({
           </div>
         </div>
       </form>
+
+      {pendingDeactivation && (
+        <DeleteModal
+          title="Desativar produto?"
+          description={
+            pendingDeactivation.quantity === 0
+              ? `O estoque de ${pendingDeactivation.name} ficará zerado e o produto será marcado como inativo.`
+              : `O produto ${pendingDeactivation.name} será marcado como inativo.`
+          }
+          cancelLabel="Voltar à edição"
+          confirmLabel="Desativar produto"
+          isSubmitting={isSubmitting}
+          onCancel={() => setPendingDeactivation(null)}
+          onConfirm={async () => {
+            if (isSubmitting) return;
+
+            try {
+              await save(pendingDeactivation);
+            } finally {
+              setPendingDeactivation(null);
+            }
+          }}
+        />
+      )}
 
       <button
         onClick={cancel}
