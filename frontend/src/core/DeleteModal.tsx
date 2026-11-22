@@ -1,5 +1,4 @@
-import { type ReactNode } from "react";
-import { PulseLoader } from "react-spinners";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 
 const buttonClass =
   "flex h-[52px] items-center justify-center gap-2 rounded-[10px] px-6 text-[15px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
@@ -27,55 +26,67 @@ const DeleteModal = ({
   onConfirm,
   children,
 }: DeleteModalProps) => {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const headingId = useId();
+
+  useEffect(() => {
+    const element = dialog.current;
+    element?.showModal();
+
+    return () => element?.close();
+  }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30">
-      <div
-        className={`border-input-stroke pointer-events-auto absolute top-1/2 left-[calc(50%+150px)] w-full max-w-148 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[15px] border bg-white shadow-[0_16px_48px_rgba(20,32,61,0.15)]`}
-      >
-        <div className="flex flex-col gap-6 p-8">
-          <div>
-            <h1 className="text-2xl font-bold">{title}</h1>
-            {description && (
-              <p className="text-secondary-text mt-2 text-base leading-6">
-                {description}
-              </p>
-            )}
-          </div>
+    <dialog
+      ref={dialog}
+      aria-labelledby={headingId}
+      className="fixed inset-0 m-auto max-h-[90vh] w-[min(95vw,37rem)] overflow-auto rounded-xl bg-white shadow-xl backdrop:bg-black/40"
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!isSubmitting) onCancel();
+      }}
+    >
+      <div className="flex flex-col gap-6 p-8">
+        <div>
+          <h2 id={headingId} className="text-2xl font-bold">
+            {title}
+          </h2>
 
-          {children}
-
-          {warning && (
-            <p className="text-destructive-color rounded-[10px] bg-[#fff1f1] p-4 text-xs leading-5">
-              ⚠ {warning}
-            </p>
+          {description && (
+            <p className="text-secondary-text mt-2 text-base">{description}</p>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#e7ebf3] px-8 py-6">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className={`${buttonClass} border-input-stroke text-accent-color border bg-white`}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => void onConfirm()}
-            disabled={isSubmitting}
-            className={`${buttonClass} bg-destructive-color text-white`}
-          >
-            {isSubmitting != undefined && isSubmitting ? (
-              <PulseLoader color="#ffffff" size={8} margin={2} />
-            ) : (
-              <>{confirmLabel}</>
-            )}
-          </button>
-        </div>
+        {children}
+
+        {warning && (
+          <p className="text-destructive-color rounded-lg bg-[#fff1f1] p-4">
+            {warning}
+          </p>
+        )}
       </div>
-    </div>
+
+      <div className="flex justify-end gap-3 border-t px-8 py-6">
+        <button
+          type="button"
+          autoFocus
+          disabled={isSubmitting}
+          onClick={onCancel}
+          className={`${buttonClass} border-input-stroke text-accent-color border bg-white`}
+        >
+          {cancelLabel}
+        </button>
+
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => void onConfirm()}
+          className={`${buttonClass} bg-destructive-color text-white`}
+        >
+          {isSubmitting ? <span role="status">Aguarde…</span> : confirmLabel}
+        </button>
+      </div>
+    </dialog>
   );
 };
 
