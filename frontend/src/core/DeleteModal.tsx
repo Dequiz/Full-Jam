@@ -11,6 +11,7 @@ type DeleteModalProps = {
   confirmLabel: string;
   isSubmitting?: boolean;
   onCancel: () => void;
+  cancelLabel?: string;
   onConfirm: () => void | Promise<void>;
   children?: ReactNode;
 };
@@ -22,6 +23,7 @@ const DeleteModal = ({
   confirmLabel,
   isSubmitting,
   onCancel,
+  cancelLabel = "Cancelar",
   onConfirm,
   children,
 }: DeleteModalProps) => {
@@ -33,9 +35,7 @@ const DeleteModal = ({
       >
         <div className="flex flex-col gap-6 p-8">
           <div>
-            <h1 className="text-2xl font-bold">
-              {title}
-            </h1>
+            <h1 className="text-2xl font-bold">{title}</h1>
             {description && (
               <p className="text-secondary-text mt-2 text-base leading-6">
                 {description}
@@ -59,7 +59,7 @@ const DeleteModal = ({
             disabled={isSubmitting}
             className={`${buttonClass} border-input-stroke text-accent-color border bg-white`}
           >
-            Cancelar
+            {cancelLabel}
           </button>
           <button
             type="button"
@@ -70,9 +70,7 @@ const DeleteModal = ({
             {isSubmitting != undefined && isSubmitting ? (
               <PulseLoader color="#ffffff" size={8} margin={2} />
             ) : (
-              <>
-                {confirmLabel}
-              </>
+              <>{confirmLabel}</>
             )}
           </button>
         </div>

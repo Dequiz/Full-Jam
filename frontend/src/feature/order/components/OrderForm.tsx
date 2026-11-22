@@ -14,6 +14,7 @@ import {
   type SaveOrderPayload,
 } from "../../../service/orderService.ts";
 import type { Product } from "../../../service/productService.ts";
+import DeleteModal from "../../../core/DeleteModal.tsx";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -33,6 +34,10 @@ type OrderFormProps = {
   onCancel: () => void;
   onSave: (payload: SaveOrderPayload) => Promise<void>;
 };
+
+type PendingConfirmation =
+  | { type: "cancel-order"; payload: SaveOrderPayload }
+  | { type: "remove-item"; item: OrderItem };
 
 const OrderForm = ({
   mode,
@@ -84,6 +89,9 @@ const OrderForm = ({
   const [selectedProductId, setSelectedProductId] = useState<string>(
     products[0]?.id ?? "",
   );
+
+  const [pendingConfirmation, setPendingConfirmation] =
+    useState<PendingConfirmation | null>(null);
 
   const selectedExistingCustomer = useMemo(
     () => customers.find((c) => c.id === selectedCustomerId),
@@ -210,30 +218,37 @@ const OrderForm = ({
   };
 
   const handleRemoveItem = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.productId !== productId));
+    const item = items.find((entry) => entry.productId === productId);
+
+    if (item) {
+      setPendingConfirmation({ type: "remove-item", item });
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || pendingConfirmation) return;
 
     if (customerMode === "new") {
       if (!isValidCpfOrCnpj(customerCpfCnpj)) {
-        toast.error("O CPF ou CNPJ informado é inválido. Verifique os dígitos.");
+        toast.error(
+          "O CPF ou CNPJ informado é inválido. Verifique os dígitos.",
+        );
         return;
       }
 
       const typedDigits = extractDigits(customerCpfCnpj);
       const duplicateCustomer = customers.some(
-        (c) => extractDigits(c.cpfCnpj) === typedDigits,
+        (customer) => extractDigits(customer.cpfCnpj) === typedDigits,
       );
+
       if (duplicateCustomer) {
         toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
         return;
       }
     }
 
-    await onSave({
+    const payload: SaveOrderPayload = {
       customerMode,
       existingCustomerId:
         customerMode === "existing" ? selectedCustomerId : undefined,
@@ -253,7 +268,14 @@ const OrderForm = ({
       deliveryType,
       observation,
       items,
-    });
+    };
+
+    if (status === "Cancelado" && initial?.status !== "Cancelado") {
+      setPendingConfirmation({ type: "cancel-order", payload });
+      return;
+    }
+
+    await onSave(payload);
   };
 
   const title = mode === "edit" ? "Editar pedido" : "Adicionar pedido";
@@ -617,7 +639,7 @@ const OrderForm = ({
                               Number.isNaN(val) ? 1 : val,
                             );
                           }}
-                          className="w-12 text-center text-[14px] font-medium text-[#111827] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          className="w-12 [appearance:textfield] text-center text-[14px] font-medium text-[#111827] outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                         <button
                           type="button"
@@ -672,8 +694,8 @@ const OrderForm = ({
 
             {items.length === 0 && (
               <p className="text-secondary-text p-8 text-center text-[13px]">
-                Nenhum produto adicionado ao pedido. Selecione um produto acima e
-                clique em &ldquo;+ Adicionar produto&rdquo;.
+                Nenhum produto adicionado ao pedido. Selecione um produto acima
+                e clique em &ldquo;+ Adicionar produto&rdquo;.
               </p>
             )}
           </div>
@@ -725,6 +747,55 @@ const OrderForm = ({
           </button>
         </div>
       </form>
+
+      {pendingConfirmation?.type === "cancel-order" && (
+        <DeleteModal
+          title={
+            initial ? "Cancelar este pedido?" : "Registrar pedido cancelado?"
+          }
+          description={
+            initial
+              ? "Ao confirmar, o pedido será marcado como cancelado e os itens serão devolvidos ao estoque."
+              : "O pedido será registrado como cancelado, sem baixar os itens do estoque."
+          }
+          cancelLabel="Voltar à edição"
+          confirmLabel={
+            initial ? "Confirmar cancelamento" : "Registrar como cancelado"
+          }
+          isSubmitting={isSubmitting}
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={async () => {
+            if (isSubmitting) return;
+
+            const { payload } = pendingConfirmation;
+
+            try {
+              await onSave(payload);
+            } finally {
+              setPendingConfirmation(null);
+            }
+          }}
+        />
+      )}
+
+      {pendingConfirmation?.type === "remove-item" && (
+        <DeleteModal
+          title="Remover produto do pedido?"
+          description={`Deseja retirar ${pendingConfirmation.item.productName} deste pedido?`}
+          cancelLabel="Manter produto"
+          confirmLabel="Remover produto"
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={() => {
+            const { productId } = pendingConfirmation.item;
+
+            setItems((previous) =>
+              previous.filter((entry) => entry.productId !== productId),
+            );
+
+            setPendingConfirmation(null);
+          }}
+        />
+      )}
     </div>
   );
 };
