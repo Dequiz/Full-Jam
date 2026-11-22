@@ -14,6 +14,7 @@ import {
   type SaveOrderPayload,
 } from "../../../service/orderService.ts";
 import type { Product } from "../../../service/productService.ts";
+import DeleteModal from "../../../core/DeleteModal.tsx";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -33,6 +34,10 @@ type OrderFormProps = {
   onCancel: () => void;
   onSave: (payload: SaveOrderPayload) => Promise<void>;
 };
+
+type PendingConfirmation =
+  | { type: "cancel-order"; payload: SaveOrderPayload }
+  | { type: "remove-item"; item: OrderItem };
 
 const OrderForm = ({
   mode,
@@ -84,6 +89,9 @@ const OrderForm = ({
   const [selectedProductId, setSelectedProductId] = useState<string>(
     products[0]?.id ?? "",
   );
+
+  const [pendingConfirmation, setPendingConfirmation] =
+    useState<PendingConfirmation | null>(null);
 
   const selectedExistingCustomer = useMemo(
     () => customers.find((c) => c.id === selectedCustomerId),
@@ -210,30 +218,37 @@ const OrderForm = ({
   };
 
   const handleRemoveItem = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.productId !== productId));
+    const item = items.find((entry) => entry.productId === productId);
+
+    if (item) {
+      setPendingConfirmation({ type: "remove-item", item });
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || pendingConfirmation) return;
 
     if (customerMode === "new") {
       if (!isValidCpfOrCnpj(customerCpfCnpj)) {
-        toast.error("O CPF ou CNPJ informado é inválido. Verifique os dígitos.");
+        toast.error(
+          "O CPF ou CNPJ informado é inválido. Verifique os dígitos.",
+        );
         return;
       }
 
       const typedDigits = extractDigits(customerCpfCnpj);
       const duplicateCustomer = customers.some(
-        (c) => extractDigits(c.cpfCnpj) === typedDigits,
+        (customer) => extractDigits(customer.cpfCnpj) === typedDigits,
       );
+
       if (duplicateCustomer) {
         toast.error("Já existe um cliente cadastrado com este CPF/CNPJ.");
         return;
       }
     }
 
-    await onSave({
+    const payload: SaveOrderPayload = {
       customerMode,
       existingCustomerId:
         customerMode === "existing" ? selectedCustomerId : undefined,
@@ -253,7 +268,14 @@ const OrderForm = ({
       deliveryType,
       observation,
       items,
-    });
+    };
+
+    if (status === "Cancelado" && initial?.status !== "Cancelado") {
+      setPendingConfirmation({ type: "cancel-order", payload });
+      return;
+    }
+
+    await onSave(payload);
   };
 
   const title = mode === "edit" ? "Editar pedido" : "Adicionar pedido";
@@ -317,7 +339,9 @@ const OrderForm = ({
             {customerMode === "existing" ? (
               <label className="block text-[13px] font-semibold text-[#1f2937]">
                 Cliente
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <select
+                  required
                   value={selectedCustomerId}
                   disabled={isSubmitting}
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
@@ -334,6 +358,7 @@ const OrderForm = ({
             ) : (
               <label className="block text-[13px] font-semibold text-[#1f2937]">
                 Cliente (Nome completo)
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <input
                   type="text"
                   required
@@ -348,6 +373,7 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Data do pedido
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <input
                 type="date"
                 required
@@ -360,7 +386,9 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Estado do pedido
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={status}
                 disabled={isSubmitting}
                 onChange={(e) => setStatus(e.target.value as OrderStatusUI)}
@@ -384,6 +412,7 @@ const OrderForm = ({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   CPF / CNPJ
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="text"
                     required
@@ -400,6 +429,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   E-mail do cliente
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="email"
                     required
@@ -413,6 +443,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   Telefone
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="tel"
                     required
@@ -426,6 +457,7 @@ const OrderForm = ({
 
                 <label className="block text-[12px] font-medium text-[#1f2937]">
                   Data de cadastro
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                   <input
                     type="date"
                     required
@@ -460,7 +492,9 @@ const OrderForm = ({
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[200px_200px_1fr]">
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Forma de pagamento
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={paymentMethod}
                 disabled={isSubmitting}
                 onChange={(e) =>
@@ -476,7 +510,9 @@ const OrderForm = ({
 
             <label className="block text-[13px] font-semibold text-[#1f2937]">
               Tipo de recebimento
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <select
+                required
                 value={deliveryType}
                 disabled={isSubmitting}
                 onChange={(e) =>
@@ -521,6 +557,7 @@ const OrderForm = ({
             <label className="border-input-stroke flex h-[48px] min-w-[260px] flex-1 items-center gap-3 rounded-[10px] border bg-white px-4">
               <span className="text-secondary-text text-lg">⌕</span>
               <select
+                aria-label="Produto a adicionar"
                 value={selectedProductId}
                 disabled={isSubmitting}
                 onChange={(e) => setSelectedProductId(e.target.value)}
@@ -554,6 +591,7 @@ const OrderForm = ({
 
           <div className="border-input-stroke overflow-x-auto rounded-[15px] border bg-white">
             <table className="w-full min-w-[680px] border-collapse text-left text-[14px]">
+              <caption className="sr-only">Itens do pedido</caption>
               <thead className="bg-accent-color text-[13px] font-semibold text-white">
                 <tr>
                   <th className="px-6 py-4">Produto</th>
@@ -574,7 +612,7 @@ const OrderForm = ({
                         {item.productImage ? (
                           <img
                             src={item.productImage}
-                            alt=""
+                            alt={`Foto de ${item.productName}`}
                             className="h-12 w-16 rounded-[6px] object-cover"
                           />
                         ) : (
@@ -617,7 +655,7 @@ const OrderForm = ({
                               Number.isNaN(val) ? 1 : val,
                             );
                           }}
-                          className="w-12 text-center text-[14px] font-medium text-[#111827] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          className="w-12 [appearance:textfield] text-center text-[14px] font-medium text-[#111827] outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                         <button
                           type="button"
@@ -672,8 +710,8 @@ const OrderForm = ({
 
             {items.length === 0 && (
               <p className="text-secondary-text p-8 text-center text-[13px]">
-                Nenhum produto adicionado ao pedido. Selecione um produto acima e
-                clique em &ldquo;+ Adicionar produto&rdquo;.
+                Nenhum produto adicionado ao pedido. Selecione um produto acima
+                e clique em &ldquo;+ Adicionar produto&rdquo;.
               </p>
             )}
           </div>
@@ -725,6 +763,55 @@ const OrderForm = ({
           </button>
         </div>
       </form>
+
+      {pendingConfirmation?.type === "cancel-order" && (
+        <DeleteModal
+          title={
+            initial ? "Cancelar este pedido?" : "Registrar pedido cancelado?"
+          }
+          description={
+            initial
+              ? "Ao confirmar, o pedido será marcado como cancelado e os itens serão devolvidos ao estoque."
+              : "O pedido será registrado como cancelado, sem baixar os itens do estoque."
+          }
+          cancelLabel="Voltar à edição"
+          confirmLabel={
+            initial ? "Confirmar cancelamento" : "Registrar como cancelado"
+          }
+          isSubmitting={isSubmitting}
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={async () => {
+            if (isSubmitting) return;
+
+            const { payload } = pendingConfirmation;
+
+            try {
+              await onSave(payload);
+            } finally {
+              setPendingConfirmation(null);
+            }
+          }}
+        />
+      )}
+
+      {pendingConfirmation?.type === "remove-item" && (
+        <DeleteModal
+          title="Remover produto do pedido?"
+          description={`Deseja retirar ${pendingConfirmation.item.productName} deste pedido?`}
+          cancelLabel="Manter produto"
+          confirmLabel="Remover produto"
+          onCancel={() => setPendingConfirmation(null)}
+          onConfirm={() => {
+            const { productId } = pendingConfirmation.item;
+
+            setItems((previous) =>
+              previous.filter((entry) => entry.productId !== productId),
+            );
+
+            setPendingConfirmation(null);
+          }}
+        />
+      )}
     </div>
   );
 };

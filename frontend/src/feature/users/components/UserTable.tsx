@@ -20,6 +20,7 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
     <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white">
       <div className="overflow-x-auto">
         <table className="w-full min-w-5xl border-collapse">
+          <caption className="sr-only">Usuários cadastrados</caption>
           <thead className="bg-accent-color text-white">
             <tr>
               <th scope="col" className={th}>
@@ -95,7 +96,9 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
                     objectToEdit={{
                       id: user.ID_USUARIO,
                     }}
-                    onEdit={() => navigate(`/usuarios/${user.ID_USUARIO}/editar`)}
+                    onEdit={() =>
+                      navigate(`/usuarios/${user.ID_USUARIO}/editar`)
+                    }
                   />
                   <DeleteButton
                     objectToDelete={{

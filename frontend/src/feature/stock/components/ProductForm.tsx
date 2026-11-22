@@ -5,6 +5,7 @@ import type {
   Product,
   ProductPayload,
 } from "../../../service/productService.ts";
+import DeleteModal from "../../../core/DeleteModal.tsx";
 
 const buttonClass =
   "flex h-[52px] items-center justify-center rounded-[10px] px-6 text-[15px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
@@ -63,10 +64,12 @@ const ProductForm = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageName, setImageName] = useState("");
   const [imageError, setImageError] = useState("");
+  const [pendingDeactivation, setPendingDeactivation] =
+    useState<ProductPayload | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || pendingDeactivation) return;
 
     if (imageError) {
       toast.error(imageError);
@@ -78,19 +81,28 @@ const ProductForm = ({
       return;
     }
 
-    const parsedPrice = Number(price);
-    const parsedQuantity = Number(quantity);
-
-    await save({
+    const payload: ProductPayload = {
       name: name.trim(),
       description: description.trim(),
-      price: parsedPrice,
-      quantity: parsedQuantity,
+      price: Number(price),
+      quantity: Number(quantity),
       code: code.trim(),
       active: active === "Ativo",
       image: image || undefined,
       imageFile,
-    });
+    };
+
+    const willDeactivate =
+      mode === "edit" &&
+      initial?.active &&
+      (!payload.active || payload.quantity === 0);
+
+    if (willDeactivate) {
+      setPendingDeactivation(payload);
+      return;
+    }
+
+    await save(payload);
   };
 
   return (
@@ -150,7 +162,11 @@ const ProductForm = ({
               {image ? (
                 <img
                   src={image}
-                  alt="Prévia do produto"
+                  alt={
+                    name.trim()
+                      ? `Prévia da imagem de ${name.trim()}`
+                      : "Prévia da imagem selecionada"
+                  }
                   className="h-full w-full object-contain"
                 />
               ) : (
@@ -192,9 +208,7 @@ const ProductForm = ({
                     !["image/jpeg", "image/png"].includes(f.type) ||
                     f.size > 5 * 1024 * 1024
                   ) {
-                    setImageError(
-                      "Escolha um arquivo JPG ou PNG de até 5 MB.",
-                    );
+                    setImageError("Escolha um arquivo JPG ou PNG de até 5 MB.");
                     setImageFile(null);
                     return;
                   }
@@ -224,6 +238,7 @@ const ProductForm = ({
             <p className="mb-3 font-semibold">Dados do produto</p>
             <label className="mb-4 block text-[12px]">
               Nome do produto
+              <span className={"align-top text-xs text-red-800"}> *</span>
               <input
                 required
                 disabled={isSubmitting}
@@ -246,6 +261,7 @@ const ProductForm = ({
             <div className="grid grid-cols-2 gap-4">
               <label className="text-[12px]">
                 Preço de venda
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <input
                   required
                   disabled={isSubmitting}
@@ -260,6 +276,7 @@ const ProductForm = ({
               </label>
               <label className="text-[12px]">
                 Status do produto
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <select
                   required
                   disabled={isSubmitting}
@@ -277,6 +294,7 @@ const ProductForm = ({
             <div className="grid grid-cols-2 gap-4">
               <label className="text-[12px]">
                 Código
+                <span className={"align-top text-xs text-red-800"}> *</span>
                 <input
                   required
                   disabled={isSubmitting}
@@ -291,12 +309,15 @@ const ProductForm = ({
               </label>
               <label className="text-[12px]">
                 Quantidade em estoque
-                <div className="mt-1 flex h-[56px] items-center rounded-[10px] border border-input-stroke bg-white px-3 focus-within:border-accent-color">
+                <span className={"align-top text-xs text-red-800"}> *</span>
+                <div className="border-input-stroke focus-within:border-accent-color mt-1 flex h-[56px] items-center rounded-[10px] border bg-white px-3">
                   <button
                     type="button"
-                    disabled={isSubmitting || (parseInt(quantity, 10) || 0) <= 0}
+                    disabled={
+                      isSubmitting || (parseInt(quantity, 10) || 0) <= 0
+                    }
                     onClick={() => handleQuantityDelta(-1)}
-                    className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold text-accent-color transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
+                    className="text-accent-color flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     −
                   </button>
@@ -309,13 +330,13 @@ const ProductForm = ({
                     value={quantity}
                     onChange={(e) => handleQuantityChange(e.target.value)}
                     placeholder="0"
-                    className="h-full flex-1 bg-transparent px-2 text-center text-[16px] font-semibold text-[#1f2937] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="h-full flex-1 [appearance:textfield] bg-transparent px-2 text-center text-[16px] font-semibold text-[#1f2937] outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => handleQuantityDelta(1)}
-                    className="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold text-accent-color transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
+                    className="text-accent-color flex size-8 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-lg font-bold transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     +
                   </button>
@@ -324,7 +345,8 @@ const ProductForm = ({
             </div>
             {mode === "edit" && (
               <p className="text-secondary-text mt-4 text-[11px]">
-                O código é fixo para identificação. A quantidade e demais dados podem ser alterados e salvos.
+                O código é fixo para identificação. A quantidade e demais dados
+                podem ser alterados e salvos.
               </p>
             )}
           </div>
@@ -359,6 +381,30 @@ const ProductForm = ({
           </div>
         </div>
       </form>
+
+      {pendingDeactivation && (
+        <DeleteModal
+          title="Desativar produto?"
+          description={
+            pendingDeactivation.quantity === 0
+              ? `O estoque de ${pendingDeactivation.name} ficará zerado e o produto será marcado como inativo.`
+              : `O produto ${pendingDeactivation.name} será marcado como inativo.`
+          }
+          cancelLabel="Voltar à edição"
+          confirmLabel="Desativar produto"
+          isSubmitting={isSubmitting}
+          onCancel={() => setPendingDeactivation(null)}
+          onConfirm={async () => {
+            if (isSubmitting) return;
+
+            try {
+              await save(pendingDeactivation);
+            } finally {
+              setPendingDeactivation(null);
+            }
+          }}
+        />
+      )}
 
       <button
         onClick={cancel}

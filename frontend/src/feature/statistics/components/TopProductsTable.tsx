@@ -29,6 +29,7 @@ const TopProductsTable = ({ products }: TopProductsTableProps) => (
 
     <div className="overflow-x-auto rounded-t-[15px] border-b border-[#395CEB] bg-white">
       <table className="w-full min-w-[680px] border-collapse text-[15px]">
+        <caption className="sr-only">Cinco produtos mais vendidos</caption>
         <thead className="bg-accent-color text-[15px] font-semibold text-white">
           <tr>
             {HEADERS.map(({ label, align }) => (
@@ -55,7 +56,7 @@ const TopProductsTable = ({ products }: TopProductsTableProps) => (
                   {product.image ? (
                     <img
                       src={product.image}
-                      alt=""
+                      alt={`Foto de ${product.name}`}
                       className="h-12 w-16 rounded-[6px] object-cover"
                     />
                   ) : (

@@ -35,6 +35,7 @@ const OrderToolbar = ({
       <label className="border-input-stroke flex h-[52px] w-full max-w-[510px] items-center gap-3 rounded-[10px] border bg-white px-4">
         <span className="text-secondary-text text-xl">⌕</span>
         <input
+          aria-label="Buscar pedidos"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Procure um produto"

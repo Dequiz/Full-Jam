@@ -3,10 +3,11 @@ import {
   userService,
 } from "../../../service/userService.ts";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import NavBar from "../../navbar/NavBar.tsx";
 import { PulseLoader } from "react-spinners";
+import DeleteModal from "../../../core/DeleteModal.tsx";
 
 const input =
   "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-accent-color focus:ring-2 focus:ring-accent-color/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-secondary-text";
@@ -31,12 +32,28 @@ const UserForm = () => {
   const [saving, setSaving] = useState(false);
   const title = isEditing ? "Editar usuário" : "Adicionar usuário";
 
+  const [originalAccess, setOriginalAccess] = useState<Pick<
+    CreateUserInput,
+    "ATIVO" | "ROLE"
+  > | null>(null);
+
+  const [pendingAccessChange, setPendingAccessChange] = useState<{
+    user: CreateUserInput;
+    description: string;
+  } | null>(null);
+
   useEffect(() => {
     if (!id) return;
 
     const loadUser = async () => {
       try {
         const user = await userService.getUserById(id);
+
+        setOriginalAccess({
+          ATIVO: user.ATIVO,
+          ROLE: user.ROLE,
+        });
+
         setForm({
           ID_USUARIO: user.ID_USUARIO,
           NOME: user.NOME,
@@ -70,35 +87,67 @@ const UserForm = () => {
     }));
   };
 
-  const handleSubmit = async (e: ChangeEvent) => {
+  const saveUser = async (user: CreateUserInput) => {
+    if (saving) return;
+
+    setSaving(true);
+
+    try {
+      if (isEditing && id) {
+        await userService.updateUser(id, user);
+        toast.success("Usuário atualizado com sucesso");
+      } else {
+        await userService.createUser(user);
+        toast.success(
+          `Usuário criado. Enviamos um email de confirmação para ${user.EMAIL}.`,
+        );
+      }
+
+      navigate("/usuarios");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o usuário.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (saving || pendingAccessChange) return;
 
     if (!isEditing && form.SENHA.length < 6) {
       toast.error("A senha deve ter pelo menos 6 caracteres");
       return;
     }
 
-    setSaving(true);
-    try {
-      if (isEditing && id) {
-        await userService.updateUser(id, form);
-        toast.success("Usuário atualizado com sucesso");
-      } else {
-        await userService.createUser(form);
-        toast.success(
-          `Usuário criado. Enviamos um email de confirmação para ${form.EMAIL}.`,
-        );
+    if (isEditing && originalAccess) {
+      const changes: string[] = [];
+
+      if (originalAccess.ATIVO && !form.ATIVO) {
+        changes.push("A conta será desativada.");
       }
-      navigate("/usuarios");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Ocorreu um erro desconhecido, entre em contato com o administrador",
-      );
-    } finally {
-      setSaving(false);
+
+      if (
+        originalAccess.ROLE === "PROPRIETARIO" &&
+        form.ROLE === "FUNCIONARIO"
+      ) {
+        changes.push("O cargo será alterado de proprietário para funcionário.");
+      }
+
+      if (changes.length > 0) {
+        setPendingAccessChange({
+          user: { ...form },
+          description: changes.join(" "),
+        });
+        return;
+      }
     }
+
+    await saveUser(form);
   };
 
   return (
@@ -133,6 +182,7 @@ const UserForm = () => {
               <div className="md:col-span-2">
                 <label htmlFor="nome" className={label}>
                   Nome do usuário
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <input
                   id="nome"
@@ -149,6 +199,7 @@ const UserForm = () => {
               <div>
                 <label htmlFor="email" className={label}>
                   Email
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <input
                   id="email"
@@ -167,6 +218,7 @@ const UserForm = () => {
                 <div>
                   <label htmlFor="senha" className={label}>
                     Senha
+                    <span className={"align-top text-xs text-red-800"}> *</span>
                   </label>
                   <input
                     id="senha"
@@ -185,8 +237,10 @@ const UserForm = () => {
               <div>
                 <label htmlFor="role" className={label}>
                   Cargo
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <select
+                  required
                   id="role"
                   name="ROLE"
                   value={form.ROLE}
@@ -201,8 +255,10 @@ const UserForm = () => {
               <div>
                 <label htmlFor="ativo" className={label}>
                   Status
+                  <span className={"align-top text-xs text-red-800"}> *</span>
                 </label>
                 <select
+                  required
                   id="ativo"
                   name="ATIVO"
                   value={String(form.ATIVO)}
@@ -240,6 +296,26 @@ const UserForm = () => {
           </form>
         )}
       </section>
+
+      {pendingAccessChange && (
+        <DeleteModal
+          title={`Alterar o acesso de ${pendingAccessChange.user.NOME}?`}
+          description={pendingAccessChange.description}
+          cancelLabel="Voltar à edição"
+          confirmLabel="Confirmar alteração de acesso"
+          isSubmitting={saving}
+          onCancel={() => setPendingAccessChange(null)}
+          onConfirm={async () => {
+            if (saving) return;
+
+            try {
+              await saveUser(pendingAccessChange.user);
+            } finally {
+              setPendingAccessChange(null);
+            }
+          }}
+        />
+      )}
     </main>
   );
 };
