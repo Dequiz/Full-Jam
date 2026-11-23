@@ -32,7 +32,11 @@ const NavBar = ({option}: {option:NavBarOptions}) => {
   return (
     <nav className="bg-accent-color sticky top-0 flex h-screen w-full max-w-72 shrink-0 flex-col justify-between gap-6 px-5 pt-14 pb-8 font-[Poppins]">
       <div className={"flex flex-col gap-6"}>
-        <h1 className={"text-nav-text text-4xl font-bold"}>Logo</h1>
+        <img
+          src="/logoBranca.png"
+          alt="Kaysen"
+          className="w-48 object-contain"
+        />
         <div className="h-px w-full bg-white/20" />
 
         <h2 className={"text-nav-text text-2xl font-bold"}>Menu</h2>
