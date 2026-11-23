@@ -31,7 +31,13 @@ import TransactionForm from "../components/TransactionForm";
 import TransactionHistory from "../components/TransactionHistory";
 import { dateLabel, money } from "../components/cashFlowFormat.ts";
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${date.getFullYear()}-${month}-${day}`;
+};
 
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -52,7 +58,8 @@ export default function CashFlow() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>("month");
+  const [period, setPeriod] = useState<Period | "day">("day");
+  const [closingDate, setClosingDate] = useState(today);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -90,23 +97,34 @@ export default function CashFlow() {
   const range = useMemo(
     () =>
       getPeriodRange(
-        period,
+        period === "day" ? "month" : period,
         transactions.map((item) => item.date),
       ),
     [period, transactions],
   );
 
   const periodTransactions = useMemo(
-    () => transactions.filter((item) => isInRange(item.date, range)),
-    [transactions, range],
+    () =>
+      transactions.filter((item) =>
+        period === "day"
+          ? item.date === closingDate
+          : isInRange(item.date, range),
+      ),
+    [transactions, period, closingDate, range],
   );
 
   const totals = useMemo(
     () =>
       periodTransactions.reduce(
         (acc, item) => {
-          if (item.type === "Entrada") acc.income += item.amount;
-          else acc.expenses += item.amount;
+          const cents = Math.round(item.amount * 100);
+
+          if (item.type === "Entrada") {
+            acc.income += cents;
+          } else {
+            acc.expenses += cents;
+          }
+
           return acc;
         },
         { income: 0, expenses: 0 },
@@ -114,7 +132,11 @@ export default function CashFlow() {
     [periodTransactions],
   );
 
-  const balance = totals.income - totals.expenses;
+  const balance = (totals.income - totals.expenses) / 100;
+
+  const unavailable =
+    isLoading || Boolean(loadError) || (period === "day" && !closingDate);
+
   const periodLabel =
     periodOptions.find((option) => option.value === period)?.label ?? "";
   const transactionToDelete = transactions.find(
@@ -226,14 +248,29 @@ export default function CashFlow() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {period === "day" && (
+                <label className="text-secondary-text flex items-center gap-2 text-xs">
+                  Data do fechamento
+                  <input
+                    type="date"
+                    value={closingDate}
+                    onChange={(event) => setClosingDate(event.target.value)}
+                    className="border-input-stroke h-11 rounded-lg border bg-white px-3"
+                  />
+                </label>
+              )}
               <label className="text-secondary-text flex items-center gap-2 text-xs">
                 Período
                 <select
                   aria-label="Filtrar período da página"
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value as Period)}
+                  onChange={(event) =>
+                    setPeriod(event.target.value as Period | "day")
+                  }
                   className="border-input-stroke focus:border-accent-color h-11 rounded-[10px] border bg-white px-3 text-sm text-[#1f2937] outline-none"
                 >
+                  <option value="day">Fechamento diário</option>
+
                   {periodOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -251,31 +288,37 @@ export default function CashFlow() {
             <>
               <section className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <SummaryCard
-                  title="Saldo do período"
-                  value={isLoading ? null : balance}
+                  title={
+                    period === "day" ? "Saldo final do dia" : "Saldo do período"
+                  }
+                  value={unavailable ? null : balance}
                   detail="Entradas menos saídas"
                 />
+
                 <SummaryCard
                   title="Total de entradas"
-                  value={isLoading ? null : totals.income}
+                  value={unavailable ? null : totals.income / 100}
                   detail="Receitas registradas"
                 />
+
                 <SummaryCard
                   title="Total de saídas"
-                  value={isLoading ? null : totals.expenses}
+                  value={unavailable ? null : totals.expenses / 100}
                   detail="Despesas registradas"
                 />
               </section>
 
-              <CashFlowChart
-                periodTransactions={periodTransactions}
-                range={range}
-                periodLabel={periodLabel}
-                isLoading={isLoading}
-                loadError={loadError}
-                onRetry={retryFetch}
-                onNew={openNew}
-              />
+              {period !== "day" && (
+                <CashFlowChart
+                  periodTransactions={periodTransactions}
+                  range={range}
+                  periodLabel={periodLabel}
+                  isLoading={isLoading}
+                  loadError={loadError}
+                  onRetry={retryFetch}
+                  onNew={openNew}
+                />
+              )}
             </>
           )}
 
