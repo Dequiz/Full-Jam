@@ -86,13 +86,26 @@ export const validateTransactionPayload = (
 
 export const cashFlowService = {
   async getTransactions(): Promise<Transaction[]> {
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select(COLUMNS)
-      .order("DATA_MOVIMENTACAO", { ascending: false });
+    const transactions: Transaction[] = [];
+    const pageSize = 500;
+    let offset = 0;
 
-    if (error) throw new Error(error.message);
-    return ((data ?? []) as unknown as TransactionRow[]).map(mapRow);
+    while (true) {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(COLUMNS)
+        .order("DATA_MOVIMENTACAO", { ascending: false })
+        .order("ID_MOVIMENTACAO", { ascending: true })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) throw new Error(error.message);
+
+      const rows = (data ?? []) as unknown as TransactionRow[];
+      if (rows.length === 0) return transactions;
+
+      transactions.push(...rows.map(mapRow));
+      offset += rows.length;
+    }
   },
 
   async createTransaction(payload: SaveTransactionPayload): Promise<void> {
