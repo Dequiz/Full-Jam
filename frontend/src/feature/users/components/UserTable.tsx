@@ -24,9 +24,6 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
           <thead className="bg-accent-color text-white">
             <tr>
               <th scope="col" className={th}>
-                ID
-              </th>
-              <th scope="col" className={th}>
                 Nome do Usuário
               </th>
               <th scope="col" className={th}>
@@ -47,7 +44,7 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
           <tbody className="divide-y-2 divide-slate-100">
             {loading && (
               <tr>
-                <td colSpan={6} className="px-8 py-10 text-center">
+                <td colSpan={5} className="px-8 py-10 text-center">
                   Carregando usuários…
                 </td>
               </tr>
@@ -55,7 +52,7 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
 
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-8 py-10 text-center">
+                <td colSpan={5} className="px-8 py-10 text-center">
                   Nenhum usuário cadastrado.
                 </td>
               </tr>
@@ -66,7 +63,6 @@ const UserTable = ({ loading, users, onDelete}: Config) => {
                 key={user.ID_USUARIO}
                 className="transition-colors hover:bg-gray-50"
               >
-                <td className={td}>{user.ID_USUARIO}</td>
                 <td className={td}>{user.NOME}</td>
                 <td className={td}>{user.EMAIL}</td>
                 <td className={td}>

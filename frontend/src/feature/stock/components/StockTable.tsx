@@ -10,11 +10,10 @@ const TABLE_HEADERS: {
   label: string;
   sortField?: ProductSortField;
 }[] = [
-  { label: "ID" },
+  { label: "Código" },
   { label: "Nome do Produto", sortField: "name" },
   { label: "Quantidade", sortField: "quantity" },
   { label: "Preço", sortField: "price" },
-  { label: "Código" },
   { label: "Status" },
   { label: "Ações" },
 ];

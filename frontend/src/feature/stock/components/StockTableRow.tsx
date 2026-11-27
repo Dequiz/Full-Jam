@@ -14,7 +14,7 @@ type StockTableRowProps = {
 const StockTableRow = ({ product, onEdit, onDelete }: StockTableRowProps) => {
   return (
     <tr className="border-t border-[#e7ebf3]">
-      <td className="px-5 py-4">{product.id}</td>
+      <td className="px-5 py-4">{product.code}</td>
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
           {product.image ? (
@@ -31,7 +31,6 @@ const StockTableRow = ({ product, onEdit, onDelete }: StockTableRowProps) => {
       </td>
       <td className="px-5 py-4">{product.quantity}</td>
       <td className="px-5 py-4">{formatCurrency(product.price)}</td>
-      <td className="px-5 py-4">{product.code}</td>
       <td className="px-5 py-4">
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
